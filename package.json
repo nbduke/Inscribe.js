@@ -1,0 +1,28 @@
+{
+  "name": "inscribejs",
+  "version": "1.0.0",
+  "description": "Helpful abstractions for professional 3D applications. Powered by Babylon.js.",
+  "main": "index.js",
+  "scripts": {
+    "start": "tsc && node lib/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nbduke/Inscribe.js.git"
+  },
+  "author": "nbduke",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/nbduke/Inscribe.js/issues"
+  },
+  "homepage": "https://github.com/nbduke/Inscribe.js#readme",
+  "devDependencies": {
+    "@types/node": "^14.0.27",
+    "@types/lodash": "^4.14.158",
+    "typescript": "^3.9.2"
+  },
+  "dependencies": {
+    "babylonjs": "^4.1.0",
+    "lodash": "^4.17.19"
+  }
+}
