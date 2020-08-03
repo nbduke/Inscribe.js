@@ -6,6 +6,7 @@ import Shape from './Shape';
  * Properties of a plane.
  */
 export interface IPlaneProps {
+  size: number;
   width: number;
   height: number;
 }
@@ -15,6 +16,7 @@ export interface IPlaneProps {
  */
 export default class Plane extends Shape<IPlaneProps> {
   private static readonly DEFAULT_PROPS: IPlaneProps = {
+    size: 1,
     width: 1,
     height: 1
   };
@@ -26,6 +28,14 @@ export default class Plane extends Shape<IPlaneProps> {
       { ...Plane.DEFAULT_PROPS, ...props },
       VertexData.CreatePlane
     );
+  }
+
+  public get size(): number {
+    return this.props.size;
+  }
+
+  public set size(value: number) {
+    this.update({ size: value });
   }
 
   public get width(): number {
