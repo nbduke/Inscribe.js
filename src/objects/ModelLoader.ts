@@ -97,7 +97,11 @@ export default class ModelLoader extends TransformNode {
         currentUrl,
         undefined,
         this._scene,
-        event => this._progress.raise(event)
+        event => {
+          if (!this.isDisposed && currentUrl === this.url) {
+            this._progress.raise(event)
+          }
+        }
       ).then(container => {
         const model: AbstractMesh = container.meshes[0];
         if (this.isDisposed || currentUrl !== this.url) {
@@ -117,7 +121,9 @@ export default class ModelLoader extends TransformNode {
         container.addAllToScene();
         this._loaded.raise(model);
       }).catch(error => {
-        this._loadFailed.raise(error);
+        if (!this.isDisposed && currentUrl === this.url) {
+          this._loadFailed.raise(error);
+        }
       });
     }
   }
