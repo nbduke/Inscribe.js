@@ -1,10 +1,10 @@
 {
   "name": "inscribejs",
   "version": "1.0.0",
-  "description": "Helpful abstractions for professional 3D applications. Powered by Babylon.js.",
-  "main": "index.js",
+  "description": "Declarative language and tools for building professional 3D applications. Powered by Babylon.js.",
+  "main": "src/index.js",
   "scripts": {
-    "start": "tsc && node lib/index.js"
+    "start": "tsc"
   },
   "repository": {
     "type": "git",

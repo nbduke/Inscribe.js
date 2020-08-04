@@ -1,5 +1,10 @@
-// views
-export { default as View } from './views/View';
+// objects
+export { default as Sphere, ISphereProps } from './objects/Sphere';
+export { default as Box, IBoxProps } from './objects/Box';
+export { default as Cylinder, ICylinderProps } from './objects/Cylinder';
+export { default as Plane, IPlaneProps } from './objects/Plane';
+export { default as Disc, IDiscProps } from './objects/Disc';
+export { default as ModelLoader } from './objects/ModelLoader';
 
 // events
 export { default as Event, IEvent } from './events/Event';
