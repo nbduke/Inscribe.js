@@ -1,0 +1,491 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+<!-- Root level -->
+<xs:element name="View">
+  <xs:complexType>
+    <xs:sequence>
+      <xs:element name="Imports" minOccurs="0" />
+      <xs:element name="Properties" type="propertiesSection" minOccurs="0"/>
+      <xs:element name="Nodes" type="nodesSection"/>
+      <xs:element name="Materials" type="materialsSection" minOccurs="0"/>
+      <xs:element name="Textures" type="texturesSection" minOccurs="0"/>
+      <xs:element name="Guis" type="guisSection" minOccurs="0"/>
+    </xs:sequence>
+    <xs:attribute name="name" type="identifier" use="required"/>
+  </xs:complexType>
+</xs:element>
+
+<!-- string regex types -->
+<xs:simpleType name="identifier">
+  <xs:restriction base="xs:string">
+    <xs:pattern value="[a-zA-Z_][a-zA-Z0-9_]*"/>
+  </xs:restriction>
+</xs:simpleType>
+
+<xs:simpleType name="expression">
+  <xs:restriction base="xs:string">
+    <xs:pattern value="\{\S+\}"/>
+  </xs:restriction>
+</xs:simpleType>
+
+<xs:simpleType name="identifierOrExpression">
+  <xs:restriction base="xs:string">
+    <xs:pattern value="[a-zA-Z_][a-zA-Z0-9_]*|\{\S+\}"/>
+  </xs:restriction>
+</xs:simpleType>
+
+<xs:simpleType name="booleanOrExpression">
+  <xs:restriction base="xs:string">
+    <xs:pattern value="true|false|\{\S+\}"/>
+  </xs:restriction>
+</xs:simpleType>
+
+<xs:simpleType name="numberOrExpression">
+  <xs:restriction base="xs:string">
+    <xs:pattern value="(\-?((([1-9]\d*\.?|0?\.)\d+)|\d))|\{\S+\}"/>
+  </xs:restriction>
+</xs:simpleType>
+
+<xs:simpleType name="zeroToOneOrExpression">
+  <xs:restriction base="xs:string">
+    <xs:pattern value="0?\.\d+|0|1|\{\S+\}"/>
+  </xs:restriction>
+</xs:simpleType>
+
+<xs:simpleType name="posNumberOrExpression">
+  <xs:restriction base="xs:string">
+    <xs:pattern value="((([1-9]\d*\.?|0?\.)\d+)|\d)|\{\S+\}"/>
+  </xs:restriction>
+</xs:simpleType>
+
+<xs:simpleType name="maskOrExpression">
+  <xs:restriction base="xs:string">
+    <xs:pattern value="[1-9]\d*|0x[0-9a-fA-F]{8}|0|\{\S+\}"/>
+  </xs:restriction>
+</xs:simpleType>
+
+<xs:simpleType name="posIntegerOrExpression">
+  <xs:restriction base="xs:string">
+    <xs:pattern value="[1-9]\d*|0|\{\S+\}"/>
+  </xs:restriction>
+</xs:simpleType>
+
+<xs:simpleType name="vector3OrExpression">
+  <xs:restriction base="xs:string">
+    <xs:pattern value="((\-?((([1-9]\d*\.?|0?\.)\d+)|\d)),(\-?((([1-9]\d*\.?|0?\.)\d+)|\d)),(\-?((([1-9]\d*\.?|0?\.)\d+)|\d)))|\{\S+\}"/>
+  </xs:restriction>
+</xs:simpleType>
+
+<xs:simpleType name="color3OrHexOrExpression">
+  <xs:restriction base="xs:string">
+    <xs:pattern value="((0?\.\d+|0|1),(0?\.\d+|0|1),(0?\.\d+|0|1))|#[0-9a-fA-F]{6}|\{\S+\}"/>
+  </xs:restriction>
+</xs:simpleType>
+
+<xs:simpleType name="color4OrHexOrExpression">
+  <xs:restriction base="xs:string">
+    <xs:pattern value="((0?\.\d+|0|1),(0?\.\d+|0|1),(0?\.\d+|0|1),(0?\.\d+|0|1))|#[0-9a-fA-F]{8}|\{\S+\}"/>
+  </xs:restriction>
+</xs:simpleType>
+<!-- string regex types -->
+
+
+<!-- Properties -->
+<xs:complexType name="propertiesSection">
+  <xs:sequence>
+    <xs:element name="Property" maxOccurs="unbounded" type="propertyType"/>
+  </xs:sequence>
+</xs:complexType>
+
+<xs:complexType name="propertyType">
+  <xs:attribute name="name" type="identifier" use="required"/>
+  <xs:attribute name="type" type="xs:string" use="required"/>
+  <xs:attribute name="default" type="xs:string"/>
+</xs:complexType>
+<!-- Properties -->
+
+
+<!-- Nodes -->
+<xs:group name="rootNodeOptions">
+  <xs:choice>
+    <xs:element name="TransformNode" type="transformNodeType"/>
+    <xs:element name="Sphere" type="sphereType"/>
+    <xs:element name="Box" type="boxType"/>
+    <xs:element name="Cylinder" type="cylinderType"/>
+    <xs:element name="Plane" type="planeType"/>
+    <xs:element name="Disc" type="discType"/>
+    <xs:element name="ModelLoader" type="modelLoaderType"/>
+    <xs:element name="DeferredGroup" type="deferredGroupType"/>
+    <xs:element name="Custom" type="customType"/>
+  </xs:choice>
+</xs:group>
+
+<xs:complexType name="nodesSection">
+  <xs:sequence>
+    <xs:group ref="rootNodeOptions" maxOccurs="unbounded"/>
+  </xs:sequence>
+</xs:complexType>
+
+<xs:complexType name="transformNodeType">
+  <xs:sequence>
+    <xs:group ref="rootNodeOptions" minOccurs="0" maxOccurs="unbounded"/>
+  </xs:sequence>
+  <xs:attribute name="name" type="identifier"/>
+  <xs:attribute name="position" type="vector3OrExpression"/>
+  <xs:attribute name="position.x" type="numberOrExpression"/>
+  <xs:attribute name="position.y" type="numberOrExpression"/>
+  <xs:attribute name="position.z" type="numberOrExpression"/>
+  <xs:attribute name="scaling" type="vector3OrExpression"/>
+  <xs:attribute name="scaling.x" type="numberOrExpression"/>
+  <xs:attribute name="scaling.y" type="numberOrExpression"/>
+  <xs:attribute name="scaling.z" type="numberOrExpression"/>
+  <xs:attribute name="rotation" type="vector3OrExpression"/>
+  <xs:attribute name="rotation.x" type="numberOrExpression"/>
+  <xs:attribute name="rotation.y" type="numberOrExpression"/>
+  <xs:attribute name="rotation.z" type="numberOrExpression"/>
+  <xs:attribute name="rotationQuaternion" type="expression"/>
+  <xs:attribute name="enabled" type="booleanOrExpression"/>
+  <xs:attribute name="ignoreNonUniformScaling" type="booleanOrExpression"/>
+  <xs:attribute name="reIntegrateRotationIntoRotationQuaternion" type="booleanOrExpression"/>
+  <xs:attribute name="scalingDeterminant" type="numberOrExpression"/>
+  <xs:attribute name="billboardMode" type="posIntegerOrExpression"/>
+  <xs:attribute name="infiniteDistance" type="booleanOrExpression"/>
+  <xs:attribute name="preserveParentRotationForBillboard" type="booleanOrExpression"/>
+</xs:complexType>
+
+<xs:complexType name="abstractMeshType">
+  <xs:complexContent>
+    <xs:extension base="transformNodeType">
+      <xs:sequence>
+        <xs:element name="Material" type="nodeMaterialOptions" minOccurs="0"/>
+      </xs:sequence>
+      <xs:attribute name="alphaIndex" type="posIntegerOrExpression"/>
+      <xs:attribute name="alwaysSelectAsActiveMesh" type="booleanOrExpression"/>
+      <xs:attribute name="cullingStrategy" type="posIntegerOrExpression"/>
+      <xs:attribute name="definedFacingForward" type="booleanOrExpression"/>
+      <xs:attribute name="doNotSyncBoundingInfo" type="booleanOrExpression"/>
+      <xs:attribute name="edgesColor" type="color4OrHexOrExpression"/>
+      <xs:attribute name="edgesRenderer" type="expression"/>
+      <xs:attribute name="edgesWidth" type="posNumberOrExpression"/>
+      <xs:attribute name="ellipsoid" type="vector3OrExpression"/>
+      <xs:attribute name="ellipsoidOffset" type="vector3OrExpression"/>
+      <xs:attribute name="isBlocker" type="booleanOrExpression"/>
+      <xs:attribute name="isOccluded" type="booleanOrExpression"/>
+      <xs:attribute name="isOcclusionQueryInProgress" type="booleanOrExpression"/>
+      <xs:attribute name="isPickable" type="booleanOrExpression"/>
+      <xs:attribute name="isVisible" type="booleanOrExpression"/>
+      <xs:attribute name="material" type="identifierOrExpression"/>
+      <xs:attribute name="occlusionQueryAlgorithmType" type="posIntegerOrExpression"/>
+      <xs:attribute name="occlusionRetryCount" type="posIntegerOrExpression"/>
+      <xs:attribute name="occlusionType" type="posIntegerOrExpression"/>
+      <xs:attribute name="outlineColor" type="color3OrHexOrExpression"/>
+      <xs:attribute name="outlineWidth" type="posNumberOrExpression"/>
+      <xs:attribute name="overlayAlpha" type="posNumberOrExpression"/>
+      <xs:attribute name="overlayColor" type="color3OrHexOrExpression"/>
+      <xs:attribute name="renderOutline" type="booleanOrExpression"/>
+      <xs:attribute name="renderOverlay" type="booleanOrExpression"/>
+      <xs:attribute name="renderingGroupId" type="posIntegerOrExpression"/>
+      <xs:attribute name="showBoundingBox" type="booleanOrExpression"/>
+      <xs:attribute name="showSubMeshesBoundingBox" type="booleanOrExpression"/>
+      <xs:attribute name="subMeshes" type="expression"/>
+      <xs:attribute name="useOctreeForCollisions" type="booleanOrExpression"/>
+      <xs:attribute name="useOctreeForPicking" type="booleanOrExpression"/>
+      <xs:attribute name="useOctreeForRenderingSelection" type="booleanOrExpression"/>
+      <xs:attribute name="applyFog" type="booleanOrExpression"/>
+      <xs:attribute name="checkCollisions" type="booleanOrExpression"/>
+      <xs:attribute name="collider" type="expression"/>
+      <xs:attribute name="collisionGroup" type="maskOrExpression"/>
+      <xs:attribute name="collisionMask" type="maskOrExpression"/>
+      <xs:attribute name="computeBonesUsingShaders" type="booleanOrExpression"/>
+      <xs:attribute name="facetDepthSortFrom" type="vector3OrExpression"/>
+      <xs:attribute name="hasVertexAlpha" type="booleanOrExpression"/>
+      <xs:attribute name="layerMask" type="maskOrExpression"/>
+      <xs:attribute name="mustDepthSortFacets" type="booleanOrExpression"/>
+      <xs:attribute name="numBoneInfluencers" type="posIntegerOrExpression"/>
+      <xs:attribute name="partitioningBBoxRatio" type="numberOrExpression"/>
+      <xs:attribute name="partitioningSubdivisions" type="posIntegerOrExpression"/>
+      <xs:attribute name="receiveShadows" type="booleanOrExpression"/>
+      <xs:attribute name="skeleton" type="expression"/>
+      <xs:attribute name="surroundingMeshes" type="expression"/>
+      <xs:attribute name="useVertexColors" type="booleanOrExpression"/>
+      <xs:attribute name="visibility" type="zeroToOneOrExpression"/>
+    </xs:extension>
+  </xs:complexContent>
+</xs:complexType>
+
+<xs:complexType name="sphereType">
+  <xs:complexContent>
+    <xs:extension base="abstractMeshType">
+      <xs:attribute name="diameter" type="posNumberOrExpression"/>
+      <xs:attribute name="segments" type="posIntegerOrExpression"/>
+    </xs:extension>
+  </xs:complexContent>
+</xs:complexType>
+
+<xs:complexType name="boxType">
+  <xs:complexContent>
+    <xs:extension base="abstractMeshType">
+      <xs:attribute name="size" type="posNumberOrExpression"/>
+      <xs:attribute name="width" type="posNumberOrExpression"/>
+      <xs:attribute name="height" type="posNumberOrExpression"/>
+      <xs:attribute name="depth" type="posNumberOrExpression"/>
+      <!-- <xs:attribute name="cornerRadius" type="posNumberOrExpression"/> -->
+    </xs:extension>
+  </xs:complexContent>
+</xs:complexType>
+
+<xs:complexType name="cylinderType">
+  <xs:complexContent>
+    <xs:extension base="abstractMeshType">
+      <xs:attribute name="diameter" type="posNumberOrExpression"/>
+      <xs:attribute name="diameterTop" type="posNumberOrExpression"/>
+      <xs:attribute name="diameterBottom" type="posNumberOrExpression"/>
+      <xs:attribute name="height" type="posNumberOrExpression"/>
+      <xs:attribute name="tessellation" type="posIntegerOrExpression"/>
+    </xs:extension>
+  </xs:complexContent>
+</xs:complexType>
+
+<xs:complexType name="planeType">
+  <xs:complexContent>
+    <xs:extension base="abstractMeshType">
+      <xs:attribute name="size" type="posNumberOrExpression"/>
+      <xs:attribute name="width" type="posNumberOrExpression"/>
+      <xs:attribute name="height" type="posNumberOrExpression"/>
+      <!-- <xs:attribute name="cornerRadius" type="posNumberOrExpression"/> -->
+    </xs:extension>
+  </xs:complexContent>
+</xs:complexType>
+
+<xs:complexType name="discType">
+  <xs:complexContent>
+    <xs:extension base="abstractMeshType">
+      <xs:attribute name="diameter" type="posNumberOrExpression"/>
+      <xs:attribute name="tessellation" type="posIntegerOrExpression"/>
+    </xs:extension>
+  </xs:complexContent>
+</xs:complexType>
+
+<xs:complexType name="modelLoaderType">
+  <xs:complexContent>
+    <xs:extension base="abstractMeshType">
+      <xs:attribute name="url" type="xs:string" use="required"/>
+      <xs:attribute name="shouldNormalize" type="booleanOrExpression"/>
+      <xs:attribute name="loaded" type="expression"/>
+      <xs:attribute name="loading" type="expression"/>
+      <xs:attribute name="progress" type="expression"/>
+      <xs:attribute name="loadFailed" type="expression"/>
+    </xs:extension>
+  </xs:complexContent>
+</xs:complexType>
+
+<xs:complexType name="deferredGroupType">
+  <xs:sequence>
+    <xs:group ref="rootNodeOptions" maxOccurs="unbounded"/>
+  </xs:sequence>
+  <xs:attribute name="name" type="identifier" use="required"/>
+  <xs:attribute name="initWhen" type="expression"/>
+  <xs:attribute name="onInit" type="expression"/>
+</xs:complexType>
+
+<xs:complexType name="customType">
+  <xs:sequence>
+    <xs:group ref="rootNodeOptions" minOccurs="0" maxOccurs="unbounded"/>
+  </xs:sequence>
+  <xs:attribute name="name" type="identifier"/>
+  <xs:attribute name="type" type="xs:string" use="required"/>
+  <xs:attribute name="factory" type="expression"/>
+  <xs:attribute name="onPropertyChanged" type="expression"/>
+  <xs:anyAttribute processContents="skip"/>
+</xs:complexType>
+<!-- Nodes -->
+
+
+<!-- Materials -->
+<xs:group name="materialOptions">
+  <xs:choice>
+    <xs:element name="StandardMaterial" type="standardMaterialType"/>
+  </xs:choice>
+</xs:group>
+
+<xs:complexType name="nodeMaterialOptions">
+  <xs:group ref="materialOptions"/>
+</xs:complexType>
+
+<xs:complexType name="materialsSection">
+  <xs:sequence>
+    <xs:group ref="materialOptions" maxOccurs="unbounded"/>
+  </xs:sequence>
+</xs:complexType>
+
+<xs:complexType name="standardMaterialType">
+  <xs:all>
+    <xs:element name="AmbientTexture" type="materialTextureOptions" minOccurs="0"/>
+    <xs:element name="BumpTexture" type="materialTextureOptions" minOccurs="0"/>
+    <xs:element name="CameraColorGradingTexture" type="materialTextureOptions" minOccurs="0"/>
+    <xs:element name="DiffuseTexture" type="materialTextureOptions" minOccurs="0"/>
+    <xs:element name="EmissiveTexture" type="materialTextureOptions" minOccurs="0"/>
+    <xs:element name="LightmapTexture" type="materialTextureOptions" minOccurs="0"/>
+    <xs:element name="OpacityTexture" type="materialTextureOptions" minOccurs="0"/>
+    <xs:element name="ReflectionTexture" type="materialTextureOptions" minOccurs="0"/>
+    <xs:element name="RefractionTexture" type="materialTextureOptions" minOccurs="0"/>
+    <xs:element name="SpecularTexture" type="materialTextureOptions" minOccurs="0"/>
+  </xs:all>
+  <xs:attribute name="name" type="identifier"/>
+  <xs:attribute name="ambientTexture" type="identifierOrExpression"/>
+  <xs:attribute name="bumpTexture" type="identifierOrExpression"/>
+  <xs:attribute name="cameraColorGradingTexture" type="identifierOrExpression"/>
+  <xs:attribute name="diffuseTexture" type="identifierOrExpression"/>
+  <xs:attribute name="emissiveTexture" type="identifierOrExpression"/>
+  <xs:attribute name="lightmapTexture" type="identifierOrExpression"/>
+  <xs:attribute name="opacityTexture" type="identifierOrExpression"/>
+  <xs:attribute name="reflectionTexture" type="identifierOrExpression"/>
+  <xs:attribute name="refractionTexture" type="identifierOrExpression"/>
+  <xs:attribute name="specularTexture" type="identifierOrExpression"/>
+  <xs:attribute name="ambientColor" type="color3OrHexOrExpression"/>
+  <xs:attribute name="diffuseColor" type="color3OrHexOrExpression"/>
+  <xs:attribute name="emissiveColor" type="color3OrHexOrExpression"/>
+  <xs:attribute name="specularColor" type="color3OrHexOrExpression"/>
+  <xs:attribute name="allowShaderHotSwapping" type="booleanOrExpression"/>
+  <xs:attribute name="alphaCutOff" type="numberOrExpression"/>
+  <xs:attribute name="checkReadyOnEveryCall" type="booleanOrExpression"/>
+  <xs:attribute name="checkReadyOnlyOnce" type="booleanOrExpression"/>
+  <xs:attribute name="customShaderNameResolve" type="expression"/>
+  <xs:attribute name="depthFunction" type="posIntegerOrExpression"/>
+  <xs:attribute name="diffuseFresnelParameters" type="expression"/>
+  <xs:attribute name="disableColorWrite" type="booleanOrExpression"/>
+  <xs:attribute name="disableDepthWrite" type="booleanOrExpression"/>
+  <xs:attribute name="disableLighting" type="booleanOrExpression"/>
+  <xs:attribute name="emissiveFresnelParameters" type="expression"/>
+  <xs:attribute name="forceDepthWrite" type="booleanOrExpression"/>
+  <xs:attribute name="getRenderTargetTextures" type="expression"/>
+  <xs:attribute name="indexOfRefraction" type="numberOrExpression"/>
+  <xs:attribute name="invertNormalMapX" type="booleanOrExpression"/>
+  <xs:attribute name="invertNormalMapY" type="booleanOrExpression"/>
+  <xs:attribute name="invertRefractionY" type="booleanOrExpression"/>
+  <xs:attribute name="linkEmissiveWithDiffuse" type="booleanOrExpression"/>
+  <xs:attribute name="maxSimultaneousLights" type="numberOrExpression"/>
+  <xs:attribute name="opacityFresnelParameters" type="expression"/>
+  <xs:attribute name="parallaxScaleBias" type="numberOrExpression"/>
+  <xs:attribute name="pointSize" type="numberOrExpression"/>
+  <xs:attribute name="reflectionFresnelParameters" type="expression"/>
+  <xs:attribute name="refractionFresnelParameters" type="expression"/>
+  <xs:attribute name="roughness" type="numberOrExpression"/>
+  <xs:attribute name="separateCullingPass" type="booleanOrExpression"/>
+  <xs:attribute name="shadowDepthWrapper" type="expression"/>
+  <xs:attribute name="sideOrientation" type="numberOrExpression"/>
+  <xs:attribute name="specularPower" type="numberOrExpression"/>
+  <xs:attribute name="twoSidedLighting" type="booleanOrExpression"/>
+  <xs:attribute name="useAlphaFromDiffuseTexture" type="booleanOrExpression"/>
+  <xs:attribute name="useEmissiveAsIllumination" type="booleanOrExpression"/>
+  <xs:attribute name="useGlossinessFromSpecularMapAlpha" type="booleanOrExpression"/>
+  <xs:attribute name="useLightmapAsShadowmap" type="booleanOrExpression"/>
+  <xs:attribute name="useObjectSpaceNormalMap" type="booleanOrExpression"/>
+  <xs:attribute name="useParallax" type="booleanOrExpression"/>
+  <xs:attribute name="useParallaxOcclusion" type="booleanOrExpression"/>
+  <xs:attribute name="useReflectionFresnelFromSpecular" type="booleanOrExpression"/>
+  <xs:attribute name="useReflectionOverAlpha" type="booleanOrExpression"/>
+  <xs:attribute name="useSpecularOverAlpha" type="booleanOrExpression"/>
+  <xs:attribute name="zOffset" type="numberOrExpression"/>
+  <xs:attribute name="alpha" type="zeroToOneOrExpression"/>
+  <xs:attribute name="alphaMode" type="posIntegerOrExpression"/>
+  <xs:attribute name="backFaceCulling" type="booleanOrExpression"/>
+  <xs:attribute name="cameraColorCurves" type="expression"/>
+  <xs:attribute name="cameraColorCurvesEnabled" type="booleanOrExpression"/>
+  <xs:attribute name="cameraColorGradingEnabled" type="booleanOrExpression"/>
+  <xs:attribute name="cameraContrast" type="numberOrExpression"/>
+  <xs:attribute name="cameraExposure" type="numberOrExpression"/>
+  <xs:attribute name="cameraToneMappiongEnabled" type="booleanOrExpression"/>
+  <xs:attribute name="fillMode" type="numberOrExpression"/>
+  <xs:attribute name="fogEnabled" type="booleanOrExpression"/>
+  <xs:attribute name="imageProcessingConfiguration" type="expression"/>
+  <xs:attribute name="needDepthPrePass" type="booleanOrExpression"/>
+  <xs:attribute name="pointsCloud" type="booleanOrExpression"/>
+  <xs:attribute name="transparencyMode" type="numberOrExpression"/>
+  <xs:attribute name="useLogarithmicDepth" type="booleanOrExpression"/>
+  <xs:attribute name="wireframe" type="booleanOrExpression"/>
+</xs:complexType>
+<!-- Materials -->
+
+
+<!-- Textures -->
+<xs:group name="textureOptions">
+  <xs:choice>
+    <xs:element name="Texture" type="textureType"/>
+  </xs:choice>
+</xs:group>
+
+<xs:complexType name="texturesSection">
+  <xs:sequence>
+    <xs:group ref="textureOptions" maxOccurs="unbounded"/>
+  </xs:sequence>
+</xs:complexType>
+
+<xs:complexType name="materialTextureOptions">
+  <xs:group ref="textureOptions"/>
+</xs:complexType>
+
+<xs:complexType name="textureType">
+  <xs:attribute name="name" type="identifier"/>
+  <xs:attribute name="url" type="xs:string"/>
+  <xs:attribute name="noMipmap" type="booleanOrExpression"/>
+  <xs:attribute name="invertY" type="booleanOrExpression"/>
+  <xs:attribute name="samplingMode" type="posIntegerOrExpression"/>
+  <xs:attribute name="format" type="posIntegerOrExpression"/>
+  <xs:attribute name="mimeType" type="xs:string"/>
+  <xs:attribute name="hasAlpha" type="booleanOrExpression"/>
+  <xs:attribute name="onLoad" type="expression"/>
+  <xs:attribute name="onError" type="expression"/>
+</xs:complexType>
+<!-- Textures -->
+
+
+<!-- Guis -->
+<xs:complexType name="guisSection">
+  <xs:sequence>
+    <xs:choice maxOccurs="unbounded">
+      <xs:element name="TextureGui" type="textureGuiType"/>
+      <xs:element name="FullScreen" type="fullScreenType"/>
+    </xs:choice>
+  </xs:sequence>
+</xs:complexType>
+
+<xs:group name="controlOptions">
+  <xs:choice>
+    <xs:element name="Rectangle"/>
+    <xs:element name="Ellipse"/>
+    <xs:element name="StackPanel"/>
+    <xs:element name="Grid"/>
+    <xs:element name="Button"/>
+    <xs:element name="Checkbox"/>
+    <xs:element name="RadioButton"/>
+    <xs:element name="Slider"/>
+    <xs:element name="TextBlock"/>
+    <xs:element name="InputText"/>
+    <xs:element name="Image"/>
+  </xs:choice>
+</xs:group>
+
+<xs:complexType name="textureGuiType">
+  <xs:sequence>
+    <xs:group ref="controlOptions" maxOccurs="unbounded"/>
+  </xs:sequence>
+  <xs:attribute name="name" type="identifier"/>
+  <xs:attribute name="mesh" type="identifierOrExpression" use="required"/>
+  <xs:attribute name="width" type="posNumberOrExpression"/>
+  <xs:attribute name="height" type="posNumberOrExpression"/>
+</xs:complexType>
+
+<xs:complexType name="fullScreenType">
+  <xs:sequence>
+    <xs:group ref="controlOptions" maxOccurs="unbounded"/>
+  </xs:sequence>
+  <xs:attribute name="name" type="identifier"/>
+  <xs:attribute name="linkWithMesh" type="identifierOrExpression"/>
+  <xs:attribute name="linkOffsetX" type="numberOrExpression"/>
+  <xs:attribute name="linkOffsetY" type="numberOrExpression"/>
+</xs:complexType>
+<!-- Guis -->
+
+</xs:schema>
