@@ -1,15 +1,15 @@
 // objects
-export { default as Sphere, ISphereProps } from './objects/Sphere';
-export { default as Box, IBoxProps } from './objects/Box';
-export { default as Cylinder, ICylinderProps } from './objects/Cylinder';
-export { default as Plane, IPlaneProps } from './objects/Plane';
-export { default as Disc, IDiscProps } from './objects/Disc';
-export { default as ModelLoader } from './objects/ModelLoader';
+export { default as Sphere, ISphereProps } from './core/objects/Sphere';
+export { default as Box, IBoxProps } from './core/objects/Box';
+export { default as Cylinder, ICylinderProps } from './core/objects/Cylinder';
+export { default as Plane, IPlaneProps } from './core/objects/Plane';
+export { default as Disc, IDiscProps } from './core/objects/Disc';
+export { default as ModelLoader } from './core/objects/ModelLoader';
 
 // events
-export { default as Event, IEvent } from './events/Event';
-export { IEventToken } from './events/EventToken';
-export { default as Notifiable, IPropertyChangedArgs, INotifiable, NotifiableClass } from './events/Notifiable';
+export { default as Event, IEvent } from './core/events/Event';
+export { IEventToken } from './core/events/EventToken';
+export { default as Notifiable, IPropertyChangedArgs, INotifiable, NotifiableClass } from './core/events/Notifiable';
 
 // input
 export {
@@ -19,7 +19,7 @@ export {
   TouchEvents,
   VRControllerEvents,
   PointerInOutEvents
-} from './input/InputEvent';
+} from './core/input/InputEvent';
 export {
   InputEventArgs,
   DeviceType,
@@ -34,4 +34,4 @@ export {
   IVRControllerInArgs,
   IVRControllerOutArgs,
   VRControllerButton
-} from './input/InputEventArgs';
+} from './core/input/InputEventArgs';
