@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<View name="Valid">
+  <Imports>
+    import Foo from '../Foo';
+    import { Bar as _Bar } from '@bar';
+  </Imports>
+  <Properties>
+    <Property name="isPickable" type="boolean"/>
+    <Property name="visibility" type="A | B&lt;T&gt;" default="{this._getVis().value}"/>
+    <Property name="title" type="string" default="'ABCD'"/>
+  </Properties>
+  <Nodes>
+    <TransformNode position="{this.viewModel.position}">
+      <Sphere name="_theSphere" isPickable="{this.IsPickable}" rotation="1.3,20,0">
+        <Box name="_myBox">
+          <Material>
+            <StandardMaterial alpha="0.8" opacityTexture="_opacityTexture">
+              <EmissiveTexture>
+                <Texture url="foo.jpg"/>
+              </EmissiveTexture>
+              <DiffuseTexture>
+                <Texture name="myTex" url="bar.png" hasAlpha="true"/>
+              </DiffuseTexture>
+            </StandardMaterial>
+          </Material>
+        </Box>
+        <Custom type="MyOtherView" name="_otherView" foo="1" bar=":)"/>
+      </Sphere>
+      <ModelLoader url="{this.getModelUrl(this.viewModel.isConnected)}" loaded="{this._onLoaded}"/>
+      <DeferredGroup name="thing" initWhen="{this.viewModel.shouldShowThing}">
+        <TransformNode name="tNode" position="0,0,1">
+          <ModelLoader url="any"/>
+          <Sphere scaling.x="0.25" material="_overrideMat"/>
+        </TransformNode>
+        <Disc/>
+      </DeferredGroup>
+    </TransformNode>
+    <ModelLoader url="{this.viewModel.bigModel.url}" loaded="{this._onModelLoaded}"/>
+    <Cylinder name="cyl" position.x="-.94" height="{this.cyl.height}"/>
+  </Nodes>
+  <Materials>
+    <StandardMaterial name="_overrideMat" opacityTexture="_opacityTexture">
+      <EmissiveTexture>
+        <Texture url="image.png"/>
+      </EmissiveTexture>
+    </StandardMaterial>
+  </Materials>
+  <Textures>
+    <Texture name="_opacityTexture" url="{this.viewModel.opacityUrl}"/>
+  </Textures>
+  <Guis>
+    <TextureGui name="bar" mesh="cyl">
+      <Ellipse>
+        <TextBlock/>
+      </Ellipse>
+    </TextureGui>
+    <FullScreen>
+      <Rectangle/>
+      <Button/>
+    </FullScreen>
+  </Guis>
+</View>
