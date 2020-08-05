@@ -1,17 +1,6 @@
 import { parseXml, Document } from 'libxmljs';
-import * as fs from 'fs';
 
-function readFile(path: string): Promise<string> {
-  return new Promise<string>((resolve, reject) => {
-    fs.readFile(path, undefined, (error, data) => {
-      if (error) {
-        reject(error);
-      } else {
-        resolve(data.toString());
-      }
-    });
-  });
-}
+import { readFile } from './FileHelpers';
 
 readFile('./src/declarative/View.xsd').then(xsdStr => {
   const xsd: Document = parseXml(xsdStr);
