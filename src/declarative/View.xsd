@@ -23,69 +23,75 @@
   </xs:restriction>
 </xs:simpleType>
 
+<xs:simpleType name="bindingKey">
+  <xs:restriction base="xs:string">
+    <xs:pattern value="\{this(\.[a-zA-Z_][a-zA-Z0-9_]*)+\}"/>
+  </xs:restriction>
+</xs:simpleType>
+
 <xs:simpleType name="expression">
   <xs:restriction base="xs:string">
-    <xs:pattern value="\{\S+\}"/>
+    <xs:pattern value="\{.+\}"/>
   </xs:restriction>
 </xs:simpleType>
 
 <xs:simpleType name="identifierOrExpression">
   <xs:restriction base="xs:string">
-    <xs:pattern value="[a-zA-Z_][a-zA-Z0-9_]*|\{\S+\}"/>
+    <xs:pattern value="[a-zA-Z_][a-zA-Z0-9_]*|\{.+\}"/>
   </xs:restriction>
 </xs:simpleType>
 
 <xs:simpleType name="booleanOrExpression">
   <xs:restriction base="xs:string">
-    <xs:pattern value="true|false|\{\S+\}"/>
+    <xs:pattern value="true|false|\{.+\}"/>
   </xs:restriction>
 </xs:simpleType>
 
 <xs:simpleType name="numberOrExpression">
   <xs:restriction base="xs:string">
-    <xs:pattern value="(\-?((([1-9]\d*\.?|0?\.)\d+)|\d))|\{\S+\}"/>
+    <xs:pattern value="(\-?((([1-9]\d*\.?|0?\.)\d+)|\d))|\{.+\}"/>
   </xs:restriction>
 </xs:simpleType>
 
 <xs:simpleType name="zeroToOneOrExpression">
   <xs:restriction base="xs:string">
-    <xs:pattern value="0?\.\d+|0|1|\{\S+\}"/>
+    <xs:pattern value="0?\.\d+|0|1|\{.+\}"/>
   </xs:restriction>
 </xs:simpleType>
 
 <xs:simpleType name="posNumberOrExpression">
   <xs:restriction base="xs:string">
-    <xs:pattern value="((([1-9]\d*\.?|0?\.)\d+)|\d)|\{\S+\}"/>
+    <xs:pattern value="((([1-9]\d*\.?|0?\.)\d+)|\d)|\{.+\}"/>
   </xs:restriction>
 </xs:simpleType>
 
 <xs:simpleType name="maskOrExpression">
   <xs:restriction base="xs:string">
-    <xs:pattern value="[1-9]\d*|0x[0-9a-fA-F]{8}|0|\{\S+\}"/>
+    <xs:pattern value="[1-9]\d*|0x[0-9a-fA-F]{8}|0|\{.+\}"/>
   </xs:restriction>
 </xs:simpleType>
 
 <xs:simpleType name="posIntegerOrExpression">
   <xs:restriction base="xs:string">
-    <xs:pattern value="[1-9]\d*|0|\{\S+\}"/>
+    <xs:pattern value="[1-9]\d*|0|\{.+\}"/>
   </xs:restriction>
 </xs:simpleType>
 
 <xs:simpleType name="vector3OrExpression">
   <xs:restriction base="xs:string">
-    <xs:pattern value="((\-?((([1-9]\d*\.?|0?\.)\d+)|\d)),(\-?((([1-9]\d*\.?|0?\.)\d+)|\d)),(\-?((([1-9]\d*\.?|0?\.)\d+)|\d)))|\{\S+\}"/>
+    <xs:pattern value="((\-?((([1-9]\d*\.?|0?\.)\d+)|\d)),(\-?((([1-9]\d*\.?|0?\.)\d+)|\d)),(\-?((([1-9]\d*\.?|0?\.)\d+)|\d)))|\{.+\}"/>
   </xs:restriction>
 </xs:simpleType>
 
 <xs:simpleType name="color3OrHexOrExpression">
   <xs:restriction base="xs:string">
-    <xs:pattern value="((0?\.\d+|0|1),(0?\.\d+|0|1),(0?\.\d+|0|1))|#[0-9a-fA-F]{6}|\{\S+\}"/>
+    <xs:pattern value="((0?\.\d+|0|1),(0?\.\d+|0|1),(0?\.\d+|0|1))|'#[0-9a-fA-F]{6}'|\{.+\}"/>
   </xs:restriction>
 </xs:simpleType>
 
 <xs:simpleType name="color4OrHexOrExpression">
   <xs:restriction base="xs:string">
-    <xs:pattern value="((0?\.\d+|0|1),(0?\.\d+|0|1),(0?\.\d+|0|1),(0?\.\d+|0|1))|#[0-9a-fA-F]{8}|\{\S+\}"/>
+    <xs:pattern value="((0?\.\d+|0|1),(0?\.\d+|0|1),(0?\.\d+|0|1),(0?\.\d+|0|1))|'#[0-9a-fA-F]{8}'|\{.+\}"/>
   </xs:restriction>
 </xs:simpleType>
 <!-- string regex types -->
@@ -152,6 +158,19 @@
   <xs:attribute name="billboardMode" type="posIntegerOrExpression"/>
   <xs:attribute name="infiniteDistance" type="booleanOrExpression"/>
   <xs:attribute name="preserveParentRotationForBillboard" type="booleanOrExpression"/>
+</xs:complexType>
+
+<xs:complexType name="modelLoaderType">
+  <xs:complexContent>
+    <xs:extension base="transformNodeType">
+      <xs:attribute name="url" type="xs:string" use="required"/>
+      <xs:attribute name="shouldNormalize" type="booleanOrExpression"/>
+      <xs:attribute name="loaded" type="expression"/>
+      <xs:attribute name="loading" type="expression"/>
+      <xs:attribute name="progress" type="expression"/>
+      <xs:attribute name="loadFailed" type="expression"/>
+    </xs:extension>
+  </xs:complexContent>
 </xs:complexType>
 
 <xs:complexType name="abstractMeshType">
@@ -261,21 +280,8 @@
 <xs:complexType name="discType">
   <xs:complexContent>
     <xs:extension base="abstractMeshType">
-      <xs:attribute name="diameter" type="posNumberOrExpression"/>
+      <xs:attribute name="radius" type="posNumberOrExpression"/>
       <xs:attribute name="tessellation" type="posIntegerOrExpression"/>
-    </xs:extension>
-  </xs:complexContent>
-</xs:complexType>
-
-<xs:complexType name="modelLoaderType">
-  <xs:complexContent>
-    <xs:extension base="abstractMeshType">
-      <xs:attribute name="url" type="xs:string" use="required"/>
-      <xs:attribute name="shouldNormalize" type="booleanOrExpression"/>
-      <xs:attribute name="loaded" type="expression"/>
-      <xs:attribute name="loading" type="expression"/>
-      <xs:attribute name="progress" type="expression"/>
-      <xs:attribute name="loadFailed" type="expression"/>
     </xs:extension>
   </xs:complexContent>
 </xs:complexType>
@@ -285,7 +291,7 @@
     <xs:group ref="rootNodeOptions" maxOccurs="unbounded"/>
   </xs:sequence>
   <xs:attribute name="name" type="identifier" use="required"/>
-  <xs:attribute name="initWhen" type="expression"/>
+  <xs:attribute name="initWhen" type="bindingKey"/>
   <xs:attribute name="onInit" type="expression"/>
 </xs:complexType>
 
@@ -295,8 +301,8 @@
   </xs:sequence>
   <xs:attribute name="name" type="identifier"/>
   <xs:attribute name="type" type="xs:string" use="required"/>
-  <xs:attribute name="factory" type="expression"/>
-  <xs:attribute name="onPropertyChanged" type="expression"/>
+  <xs:attribute name="factory" type="expression" use="required"/>
+  <xs:attribute name="attachChildrenTo" type="identifier"/>
   <xs:anyAttribute processContents="skip"/>
 </xs:complexType>
 <!-- Nodes -->

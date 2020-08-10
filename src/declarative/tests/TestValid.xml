@@ -2,47 +2,88 @@
 
 <View name="Valid">
   <Imports>
-    import Foo from '../Foo';
-    import { Bar as _Bar } from '@bar';
+    import Constants from '../Constants';
+    import { Foo as _Foo } from '@bar';
   </Imports>
   <Properties>
     <Property name="isPickable" type="boolean"/>
-    <Property name="visibility" type="A | B&lt;T&gt;" default="{this._getVis().value}"/>
-    <Property name="title" type="string" default="'ABCD'"/>
+    <Property name="color" type="Color3 | string" default="{this._getVis().value}"/>
+    <Property name="title" type="string" default="'NO TITLE'"/>
   </Properties>
   <Nodes>
-    <TransformNode position="{this.viewModel.position}">
-      <Sphere name="_theSphere" isPickable="{this.IsPickable}" rotation="1.3,20,0">
-        <Box name="_myBox">
-          <Material>
-            <StandardMaterial alpha="0.8" opacityTexture="_opacityTexture">
-              <EmissiveTexture>
-                <Texture url="foo.jpg"/>
-              </EmissiveTexture>
-              <DiffuseTexture>
-                <Texture name="myTex" url="bar.png" hasAlpha="true"/>
-              </DiffuseTexture>
-            </StandardMaterial>
-          </Material>
-        </Box>
-        <Custom type="MyOtherView" name="_otherView" foo="1" bar=":)"/>
+    <TransformNode
+      name="root"
+      billboardMode="1"
+    >
+      <Sphere
+        name="_theSphere"
+        diameter="{this.viewModel.sphereDiameter}"
+        isPickable="{this.isPickable}"
+        rotation="1.3,20,0"
+      >
+        <Custom
+          type="MyOtherView"
+          name="_sideView"
+          factory="{(props, parent) => new MyOtherView(props)}"
+          node.position="{this._getSideViewPosition(this.viewModel.sphereDiamter)}"
+          foo="1"
+          bar=":)"
+        />
+        <Material>
+          <StandardMaterial
+            alpha="0.8"
+            emissiveColor="{this.color}"
+            diffuseColor="{this.color}"
+            opacityTexture="_opacityTexture"
+          />
+        </Material>
       </Sphere>
-      <ModelLoader url="{this.getModelUrl(this.viewModel.isConnected)}" loaded="{this._onLoaded}"/>
-      <DeferredGroup name="thing" initWhen="{this.viewModel.shouldShowThing}">
-        <TransformNode name="tNode" position="0,0,1">
-          <ModelLoader url="any"/>
-          <Sphere scaling.x="0.25" material="_overrideMat"/>
+      <DeferredGroup name="popupMenu" initWhen="{this.viewModel.isMenuOpen}">
+        <TransformNode
+          name="_menuRoot"
+          position="0,1,-3"
+          scaling="{this._menuScale}"
+        >
+          <ModelLoader
+            url="{this.getModelUrl(this.viewModel.isConnected)}"
+            loaded="{this._onMenuLoaded}"
+            loadFailed="{this._onMenuFailed}"
+          />
+          <Box
+            width="1"
+            height="1"
+            depth="0.01"
+            position.x="2"
+            material="_acrylicMat"
+          >
+            <Plane
+              name="_titlePlane"
+              size="1"
+              position.z="-0.05"
+              isPickable="{this.isPickable}"
+            />
+            <Disc
+              name="_pictureMesh"
+              radius="{Constants.PICTURE_RADIUS}"
+              position="{new Vector3(0.4, 0, -0.05)}"
+            >
+              <Material>
+                <StandardMaterial disableLighting="true">
+                  <EmissiveTexture>
+                    <Texture url="{this.viewModel.picture}"/>
+                  </EmissiveTexture>
+                </StandardMaterial>
+              </Material>
+            </Disc>
+          </Box>
         </TransformNode>
-        <Disc/>
       </DeferredGroup>
     </TransformNode>
-    <ModelLoader url="{this.viewModel.bigModel.url}" loaded="{this._onModelLoaded}"/>
-    <Cylinder name="cyl" position.x="-.94" height="{this.cyl.height}"/>
   </Nodes>
   <Materials>
-    <StandardMaterial name="_overrideMat" opacityTexture="_opacityTexture">
+    <StandardMaterial name="_acrylicMat" opacityTexture="_opacityTexture">
       <EmissiveTexture>
-        <Texture url="image.png"/>
+        <Texture url="acrylic_noise.png"/>
       </EmissiveTexture>
     </StandardMaterial>
   </Materials>
@@ -50,9 +91,9 @@
     <Texture name="_opacityTexture" url="{this.viewModel.opacityUrl}"/>
   </Textures>
   <Guis>
-    <TextureGui name="bar" mesh="cyl">
+    <TextureGui name="title" mesh="_titlePlane">
       <Ellipse>
-        <TextBlock/>
+        <TextBlock text="{this.title}"/>
       </Ellipse>
     </TextureGui>
     <FullScreen>

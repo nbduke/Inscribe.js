@@ -19,6 +19,9 @@ describe('View.xsd', () => {
       const xsd: Document = parseXml(xsdStr);
       const xml: Document = parseXml(xmlStr);
       const isValid: boolean = xml.validate(xsd);
+      if (!isValid) {
+        console.error(xml.validationErrors);
+      }
       expect(isValid).toBe(true);
     }).catch(error => {
       fail(error);
