@@ -1,11 +1,11 @@
 import { Element, Attribute } from 'libxmljs';
 
 import ClassBuilder, { lineDelim } from '../builders/ClassBuilder';
-import PropertyBuilder from '../builders/PropertyBuilder';
 import MethodBuilder from '../builders/MethodBuilder';
 import { IMemberNames, IImportsTracker, ISharedObjects } from './DocumentTranslator';
-import { IObjectNames, getObjectNames } from './ObjectNames';
+import { IObjectNames, getObjectNames, declareObject } from './ObjectNames';
 import AttributeTranslator, { IAttributeInfo } from './AttributeTranslator';
+import MaterialTranslator from './MaterialTranslator';
 
 const shapeConstructorProps: Map<string, Set<string>> = new Map([
   ['Sphere', new Set(['diameter', 'segments'])],
@@ -66,6 +66,9 @@ export default class NodeTranslator {
       case 'DeferredGroup':
         this._translateDeferredGroup(element, parentName);
         break;
+      case 'Material':
+        this._translateMaterial(element, parentName, deferredGroup);
+        break;
     }
   }
 
@@ -73,11 +76,11 @@ export default class NodeTranslator {
     const nodeType: string = element.name();
     this._importsTracker.babylon.add(nodeType);
     const objectNames: IObjectNames = getObjectNames(nodeType, element.attr('name')?.value());
-    this._declareObject(nodeType, objectNames, !!deferredGroup);
+    declareObject(nodeType, objectNames, !!deferredGroup, this._class);
 
     const initMethod: MethodBuilder = this._class.getMethod(deferredGroup ?? this._memberNames.init)!;
     initMethod.addToBody(
-      `this.${objectNames.privateName} = new TransformNode('${objectNames.publicName}', this.${this._memberNames.scene});`,
+      `this.${objectNames.privateName} = new ${nodeType}('${objectNames.publicName}', this.${this._memberNames.scene});`,
       `this.${name}.parent = this.${parentName};`
     );
 
@@ -96,7 +99,7 @@ export default class NodeTranslator {
     const shapeType: string = element.name();
     this._importsTracker.inscribe.add(shapeType);
     const objectNames: IObjectNames = getObjectNames(shapeType, element.attr('name')?.value());
-    this._declareObject(shapeType, objectNames, !!deferredGroup);
+    declareObject(shapeType, objectNames, !!deferredGroup, this._class);
 
     const attributeInfos: IAttributeInfo[] = element.attrs()
       .filter(a => a.name() !== 'name')
@@ -139,7 +142,7 @@ export default class NodeTranslator {
 
   private _handleMaterialAttribute(nodeName: string, materialName: string, nodeInitMethod: MethodBuilder): void {
     if (!this._sharedObjects.materials.has(materialName)) {
-      throw new Error('Unmatched reference');
+      throw new Error(`Shared material not found: ${materialName}`);
     }
     const ensureMethodName: string = `_ensure_${materialName}`;
     if (!this._class.hasMethod(ensureMethodName)) {
@@ -149,6 +152,7 @@ export default class NodeTranslator {
         'private'
       );
       this._class.addMethod(ensureMethod);
+      this._importsTracker.babylon.add('Material');
     }
     nodeInitMethod.addToBody(
       `this.${nodeName}.material = this.${ensureMethodName}();`
@@ -159,7 +163,7 @@ export default class NodeTranslator {
     const nodeType: string = element.name();
     this._importsTracker.inscribe.add(nodeType);
     const objectNames: IObjectNames = getObjectNames(nodeType, element.attr('name')?.value());
-    this._declareObject(nodeType, objectNames, !!deferredGroup);
+    declareObject(nodeType, objectNames, !!deferredGroup, this._class);
 
     const initMethod: MethodBuilder = this._class.getMethod(deferredGroup ?? this._memberNames.init)!;
 
@@ -196,7 +200,7 @@ export default class NodeTranslator {
   private _translateCustom(element: Element, parentName: string, deferredGroup?: string): void {
     const type: string = element.attr('type')!.value();
     const objectNames: IObjectNames = getObjectNames(type, element.attr('name')!.value());
-    this._declareObject(type, objectNames, !!deferredGroup);
+    declareObject(type, objectNames, !!deferredGroup, this._class);
 
     const attributeInfos: IAttributeInfo[] = element.attrs()
       .filter(a => !customNodeMetaProps.has(a.name()))
@@ -254,20 +258,17 @@ export default class NodeTranslator {
     }
   }
 
-  private _declareObject(type: string, objectNames: IObjectNames, isDeferred: boolean): void {
-    this._class.addMemberVariable(
-      objectNames.privateName,
-      type,
-      'private',
-      undefined,
-      isDeferred ? '?' : '!'
-    );
-
-    if (!objectNames.isNameGenerated) {
-      const propertyType: string = isDeferred ? type + ' | undefined' : type;
-      const property: PropertyBuilder = new PropertyBuilder(objectNames.publicName, propertyType, 'protected');
-      property.addToGetterBody(`return this.${objectNames.privateName};`);
-      this._class.addProperty(property);
+  private _translateMaterial(element: Element, parentName: string, deferredGroup?: string): void {
+    if ((element.parent() as Element).attr('material')) {
+      throw new Error(`Conflicting material assignments on node ${parentName.slice(2)}.`);
     }
+
+    const materialTranslator: MaterialTranslator = new MaterialTranslator(
+      this._class,
+      this._importsTracker,
+      this._sharedObjects,
+      this._memberNames
+    );
+    materialTranslator.translateNodeMaterial(element.child(0)!, parentName, deferredGroup);
   }
 }

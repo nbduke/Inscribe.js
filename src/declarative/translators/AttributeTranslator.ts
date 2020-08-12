@@ -22,7 +22,7 @@ export interface IAttributeInfo {
 }
 
 export default class AttributeTranslator {
-  private readonly _importsTracker: IImportsTracker; // TODO figure out what to do with this
+  private readonly _importsTracker: IImportsTracker;
   private readonly _memberNames: IMemberNames;
 
   constructor(importsTracker: IImportsTracker, memberNames: IMemberNames) {
@@ -121,7 +121,7 @@ export default class AttributeTranslator {
 
   private _getAddBinding(expression: string, propertySetterTemplate: string): string | undefined {
     return bindingKeyRegex.test(expression)
-      ? `this.${this._memberNames.addBinding}(${expression}, (value) => { ${propertySetterTemplate.replace('@value', 'value')} })`
+      ? `this.${this._memberNames.addBinding}('${expression}', (value) => { ${propertySetterTemplate.replace('@value', 'value')} })`
       : undefined;
   }
 
@@ -134,6 +134,7 @@ export default class AttributeTranslator {
   }
 
   private _parseObject(type: string, value: string): string {
+    this._importsTracker.babylon.add(type);
     if (type.startsWith('Color') && value.startsWith('\'#')) {
       return `${type}.FromHexString(${value})`;
     } else {

@@ -1,9 +1,11 @@
 import { Document, Element } from 'libxmljs';
 
-import ClassBuilder from '../builders/ClassBuilder';
+import ClassBuilder, { lineDelim } from '../builders/ClassBuilder';
 import MethodBuilder from '../builders/MethodBuilder';
 import PropertyTranslator from './PropertyTranslator';
 import NodeTranslator from './NodeTranslator';
+import MaterialTranslator from './MaterialTranslator';
+import TextureTranslator from './TextureTranslator';
 
 export interface IMemberNames {
   root: string;
@@ -35,10 +37,17 @@ export default class DocumentTranslator {
     bindingEngine: '_bindingEngine',
     addBinding: '_bindingEngine.addBinding'
   };
+  private readonly _babylonLib: string;
+  private readonly _inscribeLib: string;
   private _class!: ClassBuilder;
   private _explicitImports!: string[];
   private _implicitImports!: IImportsTracker;
   private _sharedObjects!: ISharedObjects;
+
+  constructor(babylonLib: string, inscribeLib: string) {
+    this._babylonLib = babylonLib;
+    this._inscribeLib = inscribeLib;
+  }
 
   public translate(document: Document): string {
     const root: Element = document.root()!;
@@ -60,7 +69,7 @@ export default class DocumentTranslator {
 
     const classOutput: string = this._class.toString();
     const importLines: string = this._compileImports();
-    return importLines + classOutput;
+    return importLines + lineDelim + classOutput;
   }
 
   private _setupVariablesAndMethods() {
@@ -107,7 +116,7 @@ export default class DocumentTranslator {
         sectionElement.childNodes().forEach(materialElement => {
           const name: string | undefined = materialElement.attr('name')?.value();
           if (!name) {
-            throw new Error('Shared materials must have a name.');
+            throw new Error('Shared materials must be named.');
           }
 
           this._sharedObjects.materials.add(name);
@@ -116,7 +125,7 @@ export default class DocumentTranslator {
         sectionElement.childNodes().forEach(textureElement => {
           const name: string | undefined = textureElement.attr('name')?.value();
           if (!name) {
-            throw new Error('Shared textures must have a name.');
+            throw new Error('Shared textures must be named.');
           }
 
           this._sharedObjects.textures.add(name);
@@ -150,10 +159,38 @@ export default class DocumentTranslator {
         );
         nodeTranslator.translate(section);
         break;
+
+      case 'Materials':
+        const materialTranslator: MaterialTranslator = new MaterialTranslator(
+          this._class,
+          this._implicitImports,
+          this._sharedObjects,
+          this._memberNames
+        );
+        section.childNodes().forEach(materialElement => {
+          materialTranslator.translateSharedMaterial(materialElement);
+        });
+        break;
+
+      case 'Textures':
+        const textureTranslator: TextureTranslator = new TextureTranslator(
+          this._class,
+          this._implicitImports,
+          this._memberNames
+        );
+        section.childNodes().forEach(textureElement => {
+          textureTranslator.translateSharedTexture(textureElement);
+        });
+        break;
     }
   }
 
   private _compileImports(): string {
-    return ''; // TODO
+    const babylonTypes: string[] = Array.from(this._implicitImports.babylon).sort();
+    const babylonImports: string = `import {${babylonTypes.join(',' + lineDelim)}} from ${this._babylonLib};`;
+    const inscribeTypes: string[] = Array.from(this._implicitImports.inscribe).sort();
+    const inscribeImports: string = `import {${inscribeTypes.join(',' + lineDelim)}} from ${this._inscribeLib};`;
+
+    return [...this._explicitImports, babylonImports, inscribeImports].join(lineDelim);
   }
 }
