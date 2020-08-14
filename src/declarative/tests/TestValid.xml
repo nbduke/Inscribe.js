@@ -68,7 +68,7 @@
               position="{new Vector3(0.4, 0, -0.05)}"
             >
               <Material>
-                <StandardMaterial disableLighting="true">
+                <StandardMaterial disableLighting="true" emissiveColor="'#CA1359'">
                   <EmissiveTexture>
                     <Texture url="{this.viewModel.picture}"/>
                   </EmissiveTexture>

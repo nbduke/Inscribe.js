@@ -5,11 +5,11 @@ import { IObjectNames } from './ObjectNames';
 
 const expressionRegex: RegExp = /^\{(.+)\}$/;
 const bindingKeyRegex: RegExp = /^this(\.[a-zA-Z_][a-zA-Z0-9_]*)+$/;
-const objectParsers: Map<string, RegExp> = new Map([
-  ['Vector3', /(\-?((([1-9]\d*\.?|0?\.)\d+)|\d)),(\-?((([1-9]\d*\.?|0?\.)\d+)|\d)),(\-?((([1-9]\d*\.?|0?\.)\d+)|\d))/],
-  ['Color3', /((0?\.\d+|0|1),(0?\.\d+|0|1),(0?\.\d+|0|1))|'#[0-9a-fA-F]{6}'/],
-  ['Color4', /((0?\.\d+|0|1),(0?\.\d+|0|1),(0?\.\d+|0|1),(0?\.\d+|0|1))|'#[0-9a-fA-F]{8}'/]
-]);
+const objectParsers: { type: string, regex: RegExp }[] = [
+  { type: 'Color3', regex: /^(((0?\.\d+|0|1),(0?\.\d+|0|1),(0?\.\d+|0|1))|'#[0-9a-fA-F]{6}')$/ },
+  { type: 'Color4', regex: /^(((0?\.\d+|0|1),(0?\.\d+|0|1),(0?\.\d+|0|1),(0?\.\d+|0|1))|'#[0-9a-fA-F]{8}')$/ },
+  { type: 'Vector3', regex: /^((\-?((([1-9]\d*\.?|0?\.)\d+)|\d)),(\-?((([1-9]\d*\.?|0?\.)\d+)|\d)),(\-?((([1-9]\d*\.?|0?\.)\d+)|\d)))$/ }
+];
 const modelLoaderEvents: Set<string> = new Set([
   'loaded', 'loading', 'loadFailed', 'progress'
 ]);
@@ -68,8 +68,8 @@ export default class AttributeTranslator {
       return expression;
     }
 
-    for (const [objectType, regex] of objectParsers) {
-      if (objectType === type && regex.test(value)) {
+    for (const parser of objectParsers) {
+      if (parser.type === type && parser.regex.test(value)) {
         return this._parseObject(type, value);
       }
     }
@@ -121,14 +121,14 @@ export default class AttributeTranslator {
 
   private _getAddBinding(expression: string, propertySetterTemplate: string): string | undefined {
     return bindingKeyRegex.test(expression)
-      ? `this.${this._memberNames.addBinding}('${expression}', (value) => { ${propertySetterTemplate.replace('@value', 'value')} })`
+      ? `this.${this._memberNames.addBinding}('${expression}', (value) => { ${propertySetterTemplate.replace('@value', 'value')} });`
       : undefined;
   }
 
   private _tryParseObject(value: string): string | undefined {
-    for (const [type, regex] of objectParsers) {
-      if (regex.test(value)) {
-        return this._parseObject(type, value);
+    for (const parser of objectParsers) {
+      if (parser.regex.test(value)) {
+        return this._parseObject(parser.type, value);
       }
     }
   }
