@@ -5,9 +5,9 @@ import {
   SceneLoaderProgressEvent,
   TransformNode,
   Vector3
-} from "babylonjs";
+} from 'babylonjs';
 
-import Event, { IEvent } from "../events/Event";
+import Event, { IEvent } from '../events/Event';
 
 /**
  * Encapsulates an asynchronously loading 3D model.

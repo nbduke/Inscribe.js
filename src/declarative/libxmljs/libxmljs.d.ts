@@ -9,9 +9,15 @@
 declare module "libxmljs" {
   import events = require('events');
 
-  export function parseXml(source: string): Document;
+  export interface IParseOptions {
+    noblanks?: boolean;
+    nocdata?: boolean;
+    noent?: boolean;
+    recover?: boolean;
+  }
+  export function parseXml(source: string, options?: IParseOptions): Document;
   export function parseHtml(source: string): HtmlDocument;
-  export function parseXmlString(source: string): Document;
+  export function parseXmlString(source: string, options?: IParseOptions): Document;
   export function parseHtmlString(source: string): HtmlDocument;
   export function parseHtmlFragment(source: string): HtmlDocument;
   export function memoryUsage(): number;
@@ -101,7 +107,7 @@ declare module "libxmljs" {
     name(newName: string): void;
     text(): string;
     text(newText: string): void;
-    attr(name: string): Attribute;
+    attr(name: string): Attribute | null;
     attr(attr: Attribute): Element;
     attr(attrObject: { [key: string]: string; }): Element;
     attrs(): Attribute[];

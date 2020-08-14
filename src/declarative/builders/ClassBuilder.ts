@@ -54,7 +54,7 @@ export default class ClassBuilder {
   private _constructorLines: string[] = [];
   private _memberVariables: IMemberVariable[] = [];
   private _properties: PropertyBuilder[] = [];
-  private _methods: MethodBuilder[] = [];
+  private _methods: Map<string, MethodBuilder> = new Map();
 
   constructor(name: string, visibility: ClassVisibility) {
     this.className = name;
@@ -119,11 +119,27 @@ export default class ClassBuilder {
   }
 
   /**
+   * Returns true if a method with the given name has been added.
+   * @param name - the method name
+   */
+  public hasMethod(name: string): boolean {
+    return this._methods.has(name);
+  }
+
+  /**
+   * Gets the method with the given name, if one has been added to this class.
+   * @param name - the method name
+   */
+  public getMethod(name: string): MethodBuilder | undefined {
+    return this._methods.get(name);
+  }
+
+  /**
    * Adds a method to the class.
    * @param method - the method
    */
   public addMethod(method: MethodBuilder): void {
-    this._methods.push(method);
+    this._methods.set(method.name, method);
   }
 
   public toString(): string {
@@ -165,11 +181,17 @@ export default class ClassBuilder {
   }
 
   private _stringifyPropertiesBy(visibility: MemberVisibility): string {
-    return this._properties.filter(p => p.visibility === visibility).map(p => p.toString()).join(this._getLineDelim());
+    return this._properties
+      .filter(p => p.visibility === visibility)
+      .map(p => p.toString())
+      .join(this._getLineDelim());
   }
 
   private _stringifyMethodsBy(visibility: MemberVisibility): string {
-    return this._methods.filter(m => m.visibility === visibility).map(m => m.toString()).join(this._getLineDelim());
+    return Array.from(this._methods.values())
+      .filter(m => m.visibility === visibility)
+      .map(m => m.toString())
+      .join(this._getLineDelim());
   }
 
   private _getLineDelim(indentation: number = 1): string {
