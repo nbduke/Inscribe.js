@@ -7,7 +7,7 @@ export interface IObjectNames {
   isNameGenerated: boolean;
 }
 
-const generatedNamesCounter: Map<string, number> = new Map();
+export const generatedNamesCounter: Map<string, number> = new Map();
 
 function generateName(type: string): string {
   let count: number = generatedNamesCounter.get(type) ?? 1;
