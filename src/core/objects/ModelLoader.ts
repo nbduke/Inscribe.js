@@ -17,6 +17,11 @@ export default class ModelLoader extends TransformNode {
    * If true (default is false), models will be normalized to fit within a unit cube centered on this node.
    */
   public shouldNormalize: boolean = false;
+  /**
+   * If true (default is false), changing `url` will not change `model` until after the requested file
+   * loads or hits an error.
+   */
+  public updateModelAfterLoad: boolean = false;
 
   private readonly _loaded: Event<AbstractMesh> = new Event();
   private readonly _loading: Event<string> = new Event();
@@ -25,12 +30,13 @@ export default class ModelLoader extends TransformNode {
 
   private _url?: string;
   private _model?: AbstractMesh;
+  private _isLoading: boolean = false;
 
   constructor(scene: Scene, name?: string, url?: string) {
     super(name ?? 'ModelLoader', scene);
+    this._url = url;
 
     if (url) {
-      this._url = url;
       this._updateModel();
     }
   }
@@ -40,6 +46,13 @@ export default class ModelLoader extends TransformNode {
    */
   public get model(): AbstractMesh | undefined {
     return this._model;
+  }
+
+  /**
+   * Returns true if a model is currently loading.
+   */
+  public get isLoading(): boolean {
+    return this._isLoading;
   }
 
   /**
@@ -74,6 +87,7 @@ export default class ModelLoader extends TransformNode {
    * Gets or sets the URL of the model to load.
    * - Setting to `undefined` will dispose the model (if it exists) and leave this node empty.
    * - If set while loading a model, the most recent URL will be loaded.
+   * - If `updateViewAfterLoad` is false, changing `url` will immediately dispose the model (if it exists).
    */
   public get url(): string | undefined {
     return this._url;
@@ -87,11 +101,16 @@ export default class ModelLoader extends TransformNode {
   }
 
   private _updateModel(): void {
-    this.model?.dispose(false, true);
-    this._model = undefined;
+    if (!this.updateModelAfterLoad || !this.url) {
+      this.model?.dispose(false, true);
+      this._model = undefined;
+      this._isLoading = false;
+    }
 
     if (this.url) {
+      this._isLoading = true;
       this._loading.raise(this.url);
+
       const currentUrl: string = this.url;
       SceneLoader.LoadAssetContainerAsync(
         currentUrl,
@@ -116,12 +135,24 @@ export default class ModelLoader extends TransformNode {
           model.position = model.absolutePosition.subtract(center);
         }
 
+        if (this.updateModelAfterLoad) {
+          this.model?.dispose(false, true);
+        }
+
         this._model = model;
         this._model.parent = this;
         container.addAllToScene();
+
+        this._isLoading = false;
         this._loaded.raise(model);
       }).catch(error => {
         if (!this.isDisposed && currentUrl === this.url) {
+          if (this.updateModelAfterLoad) {
+            this.model?.dispose(false, true);
+            this._model = undefined;
+          }
+
+          this._isLoading = false;
           this._loadFailed.raise(error);
         }
       });
