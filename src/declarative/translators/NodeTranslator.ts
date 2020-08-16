@@ -85,7 +85,7 @@ export default class NodeTranslator {
     );
 
     element.attrs().filter(a => a.name() !== 'name').forEach(a => {
-      const attributeInfo: IAttributeInfo = this._attributeTranslator.translate(a, nodeType, objectNames);
+      const attributeInfo: IAttributeInfo = this._attributeTranslator.translate(a, nodeType, objectNames.privateName);
       initMethod.addToBody(attributeInfo.propertySetter);
       if (attributeInfo.addBinding) {
         initMethod.addToBody(attributeInfo.addBinding);
@@ -103,7 +103,7 @@ export default class NodeTranslator {
 
     const attributeInfos: IAttributeInfo[] = element.attrs()
       .filter(a => a.name() !== 'name')
-      .map(a => this._attributeTranslator.translate(a, shapeType, objectNames));
+      .map(a => this._attributeTranslator.translate(a, shapeType, objectNames.privateName));
 
     const ctorProps: Set<string> = shapeConstructorProps.get(shapeType)!;
     const propsObject: string = attributeInfos
@@ -167,22 +167,15 @@ export default class NodeTranslator {
 
     const initMethod: MethodBuilder = this._class.getMethod(deferredGroup ?? this._memberNames.init)!;
 
-    let urlAttribute: Attribute | null = element.attr('url');
-    if (urlAttribute) {
-      const url: string = this._attributeTranslator.extractExpression(urlAttribute);
-      initMethod.addToBody(
-        `this.${objectNames.privateName} = new ${nodeType}(this.${this._memberNames.scene}, '${objectNames.publicName}', ${url});`
-      );
-    } else {
-      initMethod.addToBody(
-        `this.${objectNames.privateName} = new ${nodeType}(this.${this._memberNames.scene}, '${objectNames.publicName}');`
-      );
-    }
-    initMethod.addToBody(`this.${name}.parent = this.${parentName};`);
+    const url: string = this._attributeTranslator.extractExpression(element.attr('url')!);
+    initMethod.addToBody(
+      `this.${objectNames.privateName} = new ${nodeType}(this.${this._memberNames.scene}, '${objectNames.publicName}', ${url});`,
+      `this.${name}.parent = this.${parentName};`
+    );
 
     element.attrs()
       .filter(a => a.name() !== 'name')
-      .map(a => this._attributeTranslator.translate(a, nodeType, objectNames))
+      .map(a => this._attributeTranslator.translate(a, nodeType, objectNames.privateName))
       .forEach(info => {
       // Don't set url property; it is passed to the constructor
       if (info.name !== 'url') {
@@ -204,7 +197,7 @@ export default class NodeTranslator {
 
     const attributeInfos: IAttributeInfo[] = element.attrs()
       .filter(a => !customNodeMetaProps.has(a.name()))
-      .map(a => this._attributeTranslator.translate(a, 'Custom', objectNames));
+      .map(a => this._attributeTranslator.translate(a, 'Custom', objectNames.privateName));
     const propsObject: string = attributeInfos
       .map(info => {
         return `${info.name}: ${info.value}`;

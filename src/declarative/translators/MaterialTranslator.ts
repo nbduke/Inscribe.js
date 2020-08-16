@@ -97,7 +97,7 @@ export default class MaterialTranslator {
     const materialTextureSlots: Set<string> = textureSlots.get(materialType)!;
     materialElement.attrs()
       .filter(a => a.name() !== 'name')
-      .map(a => this._attributeTranslator.translate(a, materialType, objectNames))
+      .map(a => this._attributeTranslator.translate(a, materialType, objectNames.privateName))
       .forEach(info => {
         if (materialTextureSlots.has(info.name)) {
           this._handleTextureAttribute(objectNames.privateName, info.name, info.value, initMethod);

@@ -70,7 +70,7 @@
               <Material>
                 <StandardMaterial disableLighting="true" emissiveColor="'#CA1359'">
                   <EmissiveTexture>
-                    <Texture url="{this.viewModel.picture}"/>
+                    <UpdatableTexture url="{this.viewModel.picture}"/>
                   </EmissiveTexture>
                 </StandardMaterial>
               </Material>
@@ -83,12 +83,12 @@
   <Materials>
     <StandardMaterial name="_acrylicMat" opacityTexture="_opacityTexture">
       <EmissiveTexture>
-        <Texture url="acrylic_noise.png"/>
+        <UpdatableTexture url="'assets/textures/acrylic_noise.png'"/>
       </EmissiveTexture>
     </StandardMaterial>
   </Materials>
   <Textures>
-    <Texture name="_opacityTexture" url="{this.viewModel.opacityUrl}"/>
+    <UpdatableTexture name="_opacityTexture" url="{this.viewModel.opacityUrl}"/>
   </Textures>
   <Guis>
     <TextureGui name="title" mesh="_titlePlane">

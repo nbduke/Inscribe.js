@@ -74,6 +74,40 @@ export default class TextureTranslator {
     initMethod: MethodBuilder,
     materialInfo?: IMaterialInfo
   ): void {
-    // TODO
+    const textureType: string = textureElement.name();
+    this._importsTracker.inscribe.add(textureType);
+
+    const ctorArgNames: string[] = ['url', 'noMipmap', 'invertY', 'samplingMode'];
+    const ctorArgs: string[] = ctorArgNames.map(name => {
+      const attribute: Attribute | null = textureElement.attr(name);
+      return attribute
+        ? this._attributeTranslator.extractExpression(attribute)
+        : 'undefined';
+    });
+    ctorArgs.splice(1, 0, `this.${this._memberNames.scene}`);
+
+    initMethod.addToBody(
+      `this.${objectNames.privateName} = new ${textureType}(${ctorArgs.join(',')});`
+    );
+    if (materialInfo) {
+      initMethod.addToBody(
+        `this.${materialInfo.name}.${materialInfo.textureSlot} = this.${objectNames.privateName};`
+      );
+    }
+
+    const ctorArgsSet: Set<string> = new Set(ctorArgNames);
+    textureElement.attrs()
+      .filter(a => a.name() !== 'name')
+      .map(a => this._attributeTranslator.translate(a, textureType, objectNames.privateName))
+      .forEach(info => {
+        // Don't assign properties passed to the constructor
+        if (!ctorArgsSet.has(info.name)) {
+          initMethod.addToBody(info.propertySetter);
+        }
+        // invertY and noMipmap cannot be set after construction
+        if (info.addBinding && info.name !== 'invertY' && info.name !== 'noMipmap') {
+          initMethod.addToBody(info.addBinding);
+        }
+      });
   }
 }

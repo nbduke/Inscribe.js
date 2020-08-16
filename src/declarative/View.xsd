@@ -41,6 +41,12 @@
   </xs:restriction>
 </xs:simpleType>
 
+<xs:simpleType name="stringOrExpression">
+  <xs:restriction base="xs:string">
+    <xs:pattern value="'.+'|\{.+\}"/>
+  </xs:restriction>
+</xs:simpleType>
+
 <xs:simpleType name="booleanOrExpression">
   <xs:restriction base="xs:string">
     <xs:pattern value="true|false|\{.+\}"/>
@@ -163,7 +169,7 @@
 <xs:complexType name="modelLoaderType">
   <xs:complexContent>
     <xs:extension base="transformNodeType">
-      <xs:attribute name="url" type="xs:string" use="required"/>
+      <xs:attribute name="url" type="stringOrExpression" use="required"/>
       <xs:attribute name="shouldNormalize" type="booleanOrExpression"/>
       <xs:attribute name="updateModelAfterLoad" type="booleanOrExpression"/>
       <xs:attribute name="loaded" type="expression"/>
@@ -419,7 +425,7 @@
 <!-- Textures -->
 <xs:group name="textureOptions">
   <xs:choice>
-    <xs:element name="Texture" type="textureType"/>
+    <xs:element name="UpdatableTexture" type="updatableTextureType"/>
   </xs:choice>
 </xs:group>
 
@@ -433,16 +439,46 @@
   <xs:group ref="textureOptions"/>
 </xs:complexType>
 
-<xs:complexType name="textureType">
+<xs:complexType name="updatableTextureType">
   <xs:attribute name="name" type="identifier"/>
-  <xs:attribute name="url" type="xs:string"/>
+  <xs:attribute name="url" type="stringOrExpression" use="required"/>
   <xs:attribute name="noMipmap" type="booleanOrExpression"/>
   <xs:attribute name="invertY" type="booleanOrExpression"/>
   <xs:attribute name="samplingMode" type="posIntegerOrExpression"/>
-  <xs:attribute name="format" type="posIntegerOrExpression"/>
-  <xs:attribute name="mimeType" type="xs:string"/>
+  <xs:attribute name="anisotropicFilteringLevel" type="posIntegerOrExpression"/>
+  <xs:attribute name="coordinatesIndex" type="posIntegerOrExpression"/>
+  <xs:attribute name="gammaSpace" type="booleanOrExpression"/>
+  <xs:attribute name="getAlphaFromRGB" type="booleanOrExpression"/>
+  <xs:attribute name="invertZ" type="booleanOrExpression"/>
+  <xs:attribute name="isRenderTarget" type="booleanOrExpression"/>
+  <xs:attribute name="level" type="numberOrExpression"/>
+  <xs:attribute name="sphericalPolynomial" type="expression"/>
+  <xs:attribute name="uAng" type="numberOrExpression"/>
+  <xs:attribute name="uOffset" type="numberOrExpression"/>
+  <xs:attribute name="uRotationCenter" type="numberOrExpression"/>
+  <xs:attribute name="uScale" type="numberOrExpression"/>
+  <xs:attribute name="vAng" type="numberOrExpression"/>
+  <xs:attribute name="vOffset" type="numberOrExpression"/>
+  <xs:attribute name="vRotationCenter" type="numberOrExpression"/>
+  <xs:attribute name="vScale" type="numberOrExpression"/>
+  <xs:attribute name="wAng" type="numberOrExpression"/>
+  <xs:attribute name="wRotationCenter" type="numberOrExpression"/>
+  <xs:attribute name="wrapR" type="posIntegerOrExpression"/>
+  <xs:attribute name="wrapU" type="posIntegerOrExpression"/>
+  <xs:attribute name="wrapV" type="posIntegerOrExpression"/>
+  <xs:attribute name="coordinatesMode" type="posIntegerOrExpression"/>
   <xs:attribute name="hasAlpha" type="booleanOrExpression"/>
+  <xs:attribute name="irradianceTexture" type="expression"/>
+  <xs:attribute name="is2DArray" type="booleanOrExpression"/>
+  <xs:attribute name="is3D" type="booleanOrExpression"/>
+  <xs:attribute name="isBlocking" type="booleanOrExpression"/>
+  <xs:attribute name="isCube" type="booleanOrExpression"/>
+  <xs:attribute name="isRGBD" type="booleanOrExpression"/>
+  <xs:attribute name="linearSpecularLOD" type="booleanOrExpression"/>
+  <xs:attribute name="lodGenerationOffset" type="numberOrExpression"/>
+  <xs:attribute name="lodGenerationScale" type="numberOrExpression"/>
   <xs:attribute name="onLoad" type="expression"/>
+  <xs:attribute name="onLoading" type="expression"/>
   <xs:attribute name="onError" type="expression"/>
 </xs:complexType>
 <!-- Textures -->

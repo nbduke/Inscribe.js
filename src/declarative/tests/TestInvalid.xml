@@ -2,14 +2,14 @@
 
 <View name="Invalid">
   <Nodes>
-    <ModelLoader name="_model" url="thing.obj" loaded="{this._onLoaded"> <!-- 1st and 2nd error -->
+    <ModelLoader name="_model" url="'thing.obj'" loaded="{this._onLoaded"> <!-- 1st and 2nd error -->
       <Plane name="_guiPlane" position.z="-0.25" enabled="{this._showGui}"/>
     </ModelLoader>
     <Box position.y="-1" size="0.67">
       <Material>
         <StandardMaterial name="_boxMat" alpha="1.5"> <!-- 3rd and 4th error -->
           <EmissiveTexture>
-            <Texture url="{this.viewModel.boxTextureUrl}"/>
+            <UpdatableTexture url="{this.viewModel.boxTextureUrl}"/>
           </EmissiveTexture>
           <DiffuseTexture name="_diffuseTex"/> <!-- 5th and 6th error -->
         </StandardMaterial>

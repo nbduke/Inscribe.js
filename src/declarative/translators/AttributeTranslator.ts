@@ -1,7 +1,6 @@
 import { Attribute } from 'libxmljs';
 
 import { IMemberNames, IImportsTracker } from './DocumentTranslator';
-import { IObjectNames } from './ObjectNames';
 
 const expressionRegex: RegExp = /^\{(.+)\}$/;
 const bindingKeyRegex: RegExp = /^this(\.[a-zA-Z_][a-zA-Z0-9_]*)+$/;
@@ -12,6 +11,9 @@ const objectParsers: { type: string, regex: RegExp }[] = [
 ];
 const modelLoaderEvents: Set<string> = new Set([
   'loaded', 'loading', 'loadFailed', 'progress'
+]);
+const updatableTextureObservables: Set<string> = new Set([
+  'onLoad', 'onLoading', 'onError'
 ]);
 
 export interface IAttributeInfo {
@@ -30,20 +32,20 @@ export default class AttributeTranslator {
     this._memberNames = memberNames;
   }
 
-  public translate(attribute: Attribute, objectType: string, objectNames: IObjectNames): IAttributeInfo {
+  public translate(attribute: Attribute, objectType: string, privateName: string): IAttributeInfo {
     const name: string = attribute.name();
     const value: string = attribute.value().trim();
 
     const expression: string | undefined = this._tryExtractExpression(value);
     if (expression) {
-      return this._handleExpression(name, expression, objectType, objectNames);
+      return this._handleExpression(name, expression, objectType, privateName);
     } else if (objectType !== 'Custom') {
       const parsedObject: string | undefined = this._tryParseObject(value);
       if (parsedObject) {
         return {
           name,
           value: parsedObject,
-          propertySetter: `this.${objectNames.privateName}.${name} = ${parsedObject};`
+          propertySetter: `this.${privateName}.${name} = ${parsedObject};`
         };
       }
     }
@@ -51,7 +53,7 @@ export default class AttributeTranslator {
     return {
       name,
       value: value,
-      propertySetter: `this.${objectNames.privateName}.${name} = ${value};`
+      propertySetter: `this.${privateName}.${name} = ${value};`
     };
   }
 
@@ -88,24 +90,40 @@ export default class AttributeTranslator {
     attributeName: string,
     expression: string,
     objectType: string,
-    objectNames: IObjectNames
+    privateName: string
   ): IAttributeInfo {
     if (objectType === 'ModelLoader' && modelLoaderEvents.has(attributeName)) {
       return {
         name: attributeName,
         value: expression,
-        propertySetter: `this.${objectNames.privateName}.${attributeName}.subscribe(${expression});`
+        propertySetter: `this.${privateName}.${attributeName}.subscribe(${expression});`
       };
+    } else if (objectType === 'UpdatableTexture') {
+      if (attributeName === 'url') {
+        const propertySetterTemplate: string = `this.${privateName}.updateURL(@value);`;
+        return {
+          name: attributeName,
+          value: expression,
+          propertySetter: propertySetterTemplate.replace('@value', expression),
+          addBinding: this._getAddBinding(expression, propertySetterTemplate)
+        }
+      } else if (attributeName === 'samplingMode') {
+        const propertySetterTemplate: string = `this.${privateName}.updateSamplingMode(@value);`;
+        return {
+          name: attributeName,
+          value: expression,
+          propertySetter: propertySetterTemplate.replace('@value', expression),
+          addBinding: this._getAddBinding(expression, propertySetterTemplate)
+        };
+      } else if (updatableTextureObservables.has(attributeName)) {
+        return {
+          name: attributeName,
+          value: expression,
+          propertySetter: `this.${privateName}.${attributeName}Observable.add(${expression});`
+        };
+      }
     } else if (objectType !== 'Custom' && attributeName === 'enabled') {
-      const propertySetterTemplate: string = `this.${objectNames.privateName}.setEnabled(@value);`;
-      return {
-        name: attributeName,
-        value: expression,
-        propertySetter: propertySetterTemplate.replace('@value', expression),
-        addBinding: this._getAddBinding(expression, propertySetterTemplate)
-      };
-    } else {
-      const propertySetterTemplate: string = `this.${objectNames.privateName}.${attributeName} = @value;`;
+      const propertySetterTemplate: string = `this.${privateName}.setEnabled(@value);`;
       return {
         name: attributeName,
         value: expression,
@@ -113,6 +131,15 @@ export default class AttributeTranslator {
         addBinding: this._getAddBinding(expression, propertySetterTemplate)
       };
     }
+
+    // The default way to assign a generic property
+    const propertySetterTemplate: string = `this.${privateName}.${attributeName} = @value;`;
+    return {
+      name: attributeName,
+      value: expression,
+      propertySetter: propertySetterTemplate.replace('@value', expression),
+      addBinding: this._getAddBinding(expression, propertySetterTemplate)
+    };
   }
 
   private _cleanExpression(expression: string): string {
