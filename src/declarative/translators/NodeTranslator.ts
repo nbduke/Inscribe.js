@@ -14,6 +14,9 @@ const shapeConstructorProps: Map<string, Set<string>> = new Map([
   ['Plane', new Set(['width', 'height', 'size'])],
   ['Disc', new Set(['radius', 'tessellation'])]
 ]);
+const modelLoaderEvents: Set<string> = new Set([
+  'loaded', 'loading', 'loadFailed', 'progress'
+]);
 const customNodeMetaProps: Set<string> = new Set([
   'name', 'type', 'factory', 'attachChildrenTo'
 ]);
@@ -84,11 +87,17 @@ export default class NodeTranslator {
       `this.${name}.parent = this.${parentName};`
     );
 
-    element.attrs().filter(a => a.name() !== 'name').forEach(a => {
-      const attributeInfo: IAttributeInfo = this._attributeTranslator.translate(a, nodeType, objectNames.privateName);
-      initMethod.addToBody(attributeInfo.propertySetter);
-      if (attributeInfo.addBinding) {
-        initMethod.addToBody(attributeInfo.addBinding);
+    element.attrs()
+      .filter(a => a.name() !== 'name')
+      .map(a => {
+        return this._attributeTranslator.translate(a, objectNames.privateName, {
+          updateMethod: a.name() === 'enabled' ? 'setEnabled' : undefined
+        });
+      })
+      .forEach(info => {
+      initMethod.addToBody(info.propertySetter);
+      if (info.addBinding) {
+        initMethod.addToBody(info.addBinding);
       }
     });
 
@@ -103,7 +112,9 @@ export default class NodeTranslator {
 
     const attributeInfos: IAttributeInfo[] = element.attrs()
       .filter(a => a.name() !== 'name')
-      .map(a => this._attributeTranslator.translate(a, shapeType, objectNames.privateName));
+      .map(a => this._attributeTranslator.translate(a, objectNames.privateName, {
+        updateMethod: a.name() === 'enabled' ? 'setEnabled' : undefined
+      }));
 
     const ctorProps: Set<string> = shapeConstructorProps.get(shapeType)!;
     const propsObject: string = attributeInfos
@@ -122,6 +133,10 @@ export default class NodeTranslator {
       ');',
       `this.${name}.parent = this.${parentName};`
     );
+
+    if (!objectNames.isNameGenerated) {
+      this._sharedObjects.meshInitMethods.set(objectNames.publicName, initMethod);
+    }
 
     attributeInfos.forEach(info => {
       if (info.name === 'material') {
@@ -167,7 +182,7 @@ export default class NodeTranslator {
 
     const initMethod: MethodBuilder = this._class.getMethod(deferredGroup ?? this._memberNames.init)!;
 
-    const url: string = this._attributeTranslator.extractExpression(element.attr('url')!);
+    const url: string = this._attributeTranslator.extractExpression(element.attr('url')!, true);
     initMethod.addToBody(
       `this.${objectNames.privateName} = new ${nodeType}(this.${this._memberNames.scene}, '${objectNames.publicName}', ${url});`,
       `this.${name}.parent = this.${parentName};`
@@ -175,13 +190,19 @@ export default class NodeTranslator {
 
     element.attrs()
       .filter(a => a.name() !== 'name')
-      .map(a => this._attributeTranslator.translate(a, nodeType, objectNames.privateName))
+      .map(a => {
+        const attributeName: string = a.name();
+        return this._attributeTranslator.translate(a, objectNames.privateName, {
+          updateMethod: attributeName === 'enabled' ? 'setEnabled' : undefined,
+          isEvent: modelLoaderEvents.has(attributeName),
+          useQuotesIfNeeded: attributeName === 'url'
+        });
+      })
       .forEach(info => {
       // Don't set url property; it is passed to the constructor
       if (info.name !== 'url') {
         initMethod.addToBody(info.propertySetter);
       }
-
       if (info.addBinding) {
         initMethod.addToBody(info.addBinding);
       }
@@ -197,7 +218,7 @@ export default class NodeTranslator {
 
     const attributeInfos: IAttributeInfo[] = element.attrs()
       .filter(a => !customNodeMetaProps.has(a.name()))
-      .map(a => this._attributeTranslator.translate(a, 'Custom', objectNames.privateName));
+      .map(a => this._attributeTranslator.translate(a, objectNames.privateName));
     const propsObject: string = attributeInfos
       .map(info => {
         return `${info.name}: ${info.value}`;
@@ -209,6 +230,10 @@ export default class NodeTranslator {
     initMethod.addToBody(
       `this.${objectNames.privateName} = (${factory})({${propsObject}}, this.${parentName});`
     );
+
+    if (!objectNames.isNameGenerated) {
+      this._sharedObjects.meshInitMethods.set(objectNames.publicName, initMethod);
+    }
 
     attributeInfos.forEach(info => {
       if (info.addBinding) {
