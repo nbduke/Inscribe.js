@@ -5,22 +5,26 @@ import { IMemberNames, IImportsTracker } from './DocumentTranslator';
 const expressionRegex: RegExp = /^\{(.+)\}$/;
 const bindingKeyRegex: RegExp = /^this(\.[a-zA-Z_][a-zA-Z0-9_]*)+$/;
 const objectParsers: { type: string, regex: RegExp }[] = [
-  { type: 'Color3', regex: /^(((0?\.\d+|0|1),(0?\.\d+|0|1),(0?\.\d+|0|1))|'#[0-9a-fA-F]{6}')$/ },
-  { type: 'Color4', regex: /^(((0?\.\d+|0|1),(0?\.\d+|0|1),(0?\.\d+|0|1),(0?\.\d+|0|1))|'#[0-9a-fA-F]{8}')$/ },
+  { type: 'Color3', regex: /^(((0?\.\d+|0|1),(0?\.\d+|0|1),(0?\.\d+|0|1))|#[0-9a-fA-F]{6})$/ },
+  { type: 'Color4', regex: /^(((0?\.\d+|0|1),(0?\.\d+|0|1),(0?\.\d+|0|1),(0?\.\d+|0|1))|#[0-9a-fA-F]{8})$/ },
   { type: 'Vector3', regex: /^((\-?((([1-9]\d*\.?|0?\.)\d+)|\d)),(\-?((([1-9]\d*\.?|0?\.)\d+)|\d)),(\-?((([1-9]\d*\.?|0?\.)\d+)|\d)))$/ }
 ];
-const modelLoaderEvents: Set<string> = new Set([
-  'loaded', 'loading', 'loadFailed', 'progress'
-]);
-const updatableTextureObservables: Set<string> = new Set([
-  'onLoad', 'onLoading', 'onError'
-]);
 
 export interface IAttributeInfo {
   name: string;
   value: string;
   propertySetter: string;
   addBinding?: string;
+}
+
+export interface ITranslationOptions {
+  isEvent?: boolean;
+  isObservable?: boolean;
+  doNotParsePrimitives?: boolean;
+  doNotBind?: boolean;
+  useQuotesIfNeeded?: boolean;
+  updateMethod?: string;
+  propertyPathOverride?: string;
 }
 
 export default class AttributeTranslator {
@@ -32,34 +36,44 @@ export default class AttributeTranslator {
     this._memberNames = memberNames;
   }
 
-  public translate(attribute: Attribute, objectType: string, privateName: string): IAttributeInfo {
+  public translate(attribute: Attribute, privateName: string, options?: ITranslationOptions): IAttributeInfo {
     const name: string = attribute.name();
-    const value: string = attribute.value().trim();
+    let value: string = attribute.value().trim();
 
     const expression: string | undefined = this._tryExtractExpression(value);
     if (expression) {
-      return this._handleExpression(name, expression, objectType, privateName);
-    } else if (objectType !== 'Custom') {
+      return this._handleExpression(name, expression, privateName, options);
+    } else if (!options?.doNotParsePrimitives) {
       const parsedObject: string | undefined = this._tryParseObject(value);
       if (parsedObject) {
         return {
           name,
           value: parsedObject,
-          propertySetter: `this.${privateName}.${name} = ${parsedObject};`
+          propertySetter: `this.${options?.propertyPathOverride ?? privateName}.${name} = ${parsedObject};`
         };
       }
     }
 
+    // Enclose the value in quotes if the content is non-numeric
+    if (options?.useQuotesIfNeeded && /\D/.test(value)) {
+      value = `'${value}'`;
+    }
+
+    const propertyPath: string = `this.${options?.propertyPathOverride ?? privateName}`;
+    const propertySetter: string = options?.updateMethod
+      ? `${propertyPath}.${options.updateMethod}(${value});`
+      : `${propertyPath}.${name} = ${value};`;
+
     return {
       name,
-      value: value,
-      propertySetter: `this.${privateName}.${name} = ${value};`
+      value,
+      propertySetter
     };
   }
 
-  public extractExpression(attribute: Attribute): string {
+  public extractExpression(attribute: Attribute, useQuotesIfNeeded?: boolean): string {
     const value: string = attribute.value().trim();
-    return this._tryExtractExpression(value) ?? value;
+    return this._tryExtractExpression(value) ?? (useQuotesIfNeeded ? `'${value}'` : value);
   }
 
   public extractExpressionFromTypeAndValue(type: string, value: string): string {
@@ -76,7 +90,7 @@ export default class AttributeTranslator {
       }
     }
 
-    return value;
+    return type === 'string' ? `'${value}'` : value;
   }
 
   private _tryExtractExpression(value: string): string | undefined {
@@ -86,64 +100,40 @@ export default class AttributeTranslator {
     }
   }
 
+  private _cleanExpression(expression: string): string {
+    return expression.trim().replace('this.', `this.${this._memberNames.host}.`);
+  }
+
   private _handleExpression(
     attributeName: string,
     expression: string,
-    objectType: string,
-    privateName: string
+    privateName: string,
+    options?: ITranslationOptions
   ): IAttributeInfo {
-    if (objectType === 'ModelLoader' && modelLoaderEvents.has(attributeName)) {
-      return {
-        name: attributeName,
-        value: expression,
-        propertySetter: `this.${privateName}.${attributeName}.subscribe(${expression});`
-      };
-    } else if (objectType === 'UpdatableTexture') {
-      if (attributeName === 'url') {
-        const propertySetterTemplate: string = `this.${privateName}.updateURL(@value);`;
-        return {
-          name: attributeName,
-          value: expression,
-          propertySetter: propertySetterTemplate.replace('@value', expression),
-          addBinding: this._getAddBinding(expression, propertySetterTemplate)
-        }
-      } else if (attributeName === 'samplingMode') {
-        const propertySetterTemplate: string = `this.${privateName}.updateSamplingMode(@value);`;
-        return {
-          name: attributeName,
-          value: expression,
-          propertySetter: propertySetterTemplate.replace('@value', expression),
-          addBinding: this._getAddBinding(expression, propertySetterTemplate)
-        };
-      } else if (updatableTextureObservables.has(attributeName)) {
-        return {
-          name: attributeName,
-          value: expression,
-          propertySetter: `this.${privateName}.${attributeName}Observable.add(${expression});`
-        };
-      }
-    } else if (objectType !== 'Custom' && attributeName === 'enabled') {
-      const propertySetterTemplate: string = `this.${privateName}.setEnabled(@value);`;
-      return {
-        name: attributeName,
-        value: expression,
-        propertySetter: propertySetterTemplate.replace('@value', expression),
-        addBinding: this._getAddBinding(expression, propertySetterTemplate)
-      };
+    const propertyPath: string = `this.${options?.propertyPathOverride ?? privateName}`;
+    let propertySetter: string;
+    let addBinding: string | undefined = undefined;
+
+    if (options?.isEvent) {
+      propertySetter = `${propertyPath}.${attributeName}.subscribe(${expression});`;
+    } else if (options?.isObservable) {
+      propertySetter = `${propertyPath}.${attributeName}Observable.add(${expression});`;
+    } else if (options?.updateMethod) {
+      const propertySetterTemplate: string = `${propertyPath}.${options.updateMethod}(@value);`;
+      propertySetter = propertySetterTemplate.replace('@value', expression);
+      addBinding = !options?.doNotBind ? this._getAddBinding(expression, propertySetterTemplate) : undefined;
+    } else {
+      const propertySetterTemplate: string = `${propertyPath}.${attributeName} = @value;`;
+      propertySetter = propertySetterTemplate.replace('@value', expression);
+      addBinding = !options?.doNotBind ? this._getAddBinding(expression, propertySetterTemplate) : undefined;
     }
 
-    // The default way to assign a generic property
-    const propertySetterTemplate: string = `this.${privateName}.${attributeName} = @value;`;
     return {
       name: attributeName,
       value: expression,
-      propertySetter: propertySetterTemplate.replace('@value', expression),
-      addBinding: this._getAddBinding(expression, propertySetterTemplate)
+      propertySetter,
+      addBinding
     };
-  }
-
-  private _cleanExpression(expression: string): string {
-    return expression.trim().replace('this.', `this.${this._memberNames.host}.`);
   }
 
   private _getAddBinding(expression: string, propertySetterTemplate: string): string | undefined {
@@ -162,8 +152,8 @@ export default class AttributeTranslator {
 
   private _parseObject(type: string, value: string): string {
     this._importsTracker.babylon.add(type);
-    if (type.startsWith('Color') && value.startsWith('\'#')) {
-      return `${type}.FromHexString(${value})`;
+    if (type.startsWith('Color') && value.startsWith('#')) {
+      return `${type}.FromHexString('${value}')`;
     } else {
       return `new ${type}(${value})`;
     }

@@ -11,6 +11,10 @@ export interface IMaterialInfo {
   textureSlot: string;
 }
 
+const updatableTextureObservables: Set<string> = new Set([
+  'onLoad', 'onLoading', 'onError'
+]);
+
 export default class TextureTranslator {
   private readonly _class: ClassBuilder;
   private readonly _importsTracker: IImportsTracker;
@@ -81,7 +85,7 @@ export default class TextureTranslator {
     const ctorArgs: string[] = ctorArgNames.map(name => {
       const attribute: Attribute | null = textureElement.attr(name);
       return attribute
-        ? this._attributeTranslator.extractExpression(attribute)
+        ? this._attributeTranslator.extractExpression(attribute, name === 'url')
         : 'undefined';
     });
     ctorArgs.splice(1, 0, `this.${this._memberNames.scene}`);
@@ -98,14 +102,27 @@ export default class TextureTranslator {
     const ctorArgsSet: Set<string> = new Set(ctorArgNames);
     textureElement.attrs()
       .filter(a => a.name() !== 'name')
-      .map(a => this._attributeTranslator.translate(a, textureType, objectNames.privateName))
+      .map(a => {
+        const attributeName: string = a.name();
+        let updateMethod: string | undefined = undefined;
+        if (attributeName === 'url') {
+          updateMethod = 'updateURL';
+        } else if (attributeName === 'samplingMode') {
+          updateMethod = 'updateSamplingMode';
+        }
+        return this._attributeTranslator.translate(a, objectNames.privateName, {
+          updateMethod,
+          isObservable: updatableTextureObservables.has(attributeName),
+          doNotBind: attributeName === 'invertY' || attributeName === 'noMipmap',
+          useQuotesIfNeeded: attributeName === 'url'
+        });
+      })
       .forEach(info => {
         // Don't assign properties passed to the constructor
         if (!ctorArgsSet.has(info.name)) {
           initMethod.addToBody(info.propertySetter);
         }
-        // invertY and noMipmap cannot be set after construction
-        if (info.addBinding && info.name !== 'invertY' && info.name !== 'noMipmap') {
+        if (info.addBinding) {
           initMethod.addToBody(info.addBinding);
         }
       });

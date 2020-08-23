@@ -6,6 +6,7 @@ import PropertyTranslator from './PropertyTranslator';
 import NodeTranslator from './NodeTranslator';
 import MaterialTranslator from './MaterialTranslator';
 import TextureTranslator from './TextureTranslator';
+import GuiTranslator from './GuiTranslator';
 
 export interface IMemberNames {
   root: string;
@@ -25,6 +26,7 @@ export interface IImportsTracker {
 export interface ISharedObjects {
   materials: Set<string>;
   textures: Set<string>;
+  meshInitMethods: Map<string, MethodBuilder>;
 }
 
 export default class DocumentTranslator {
@@ -60,7 +62,8 @@ export default class DocumentTranslator {
     };
     this._sharedObjects = {
       materials: new Set(),
-      textures: new Set()
+      textures: new Set(),
+      meshInitMethods: new Map()
     };
 
     this._setupVariablesAndMethods();
@@ -181,6 +184,16 @@ export default class DocumentTranslator {
         section.childNodes().forEach(textureElement => {
           textureTranslator.translateSharedTexture(textureElement);
         });
+        break;
+
+      case 'Guis':
+        const guiTranslator: GuiTranslator = new GuiTranslator(
+          this._class,
+          this._implicitImports,
+          this._memberNames,
+          this._sharedObjects.meshInitMethods
+        );
+        guiTranslator.translate(section);
         break;
     }
   }

@@ -41,12 +41,6 @@
   </xs:restriction>
 </xs:simpleType>
 
-<xs:simpleType name="stringOrExpression">
-  <xs:restriction base="xs:string">
-    <xs:pattern value="'.+'|\{.+\}"/>
-  </xs:restriction>
-</xs:simpleType>
-
 <xs:simpleType name="booleanOrExpression">
   <xs:restriction base="xs:string">
     <xs:pattern value="true|false|\{.+\}"/>
@@ -91,13 +85,25 @@
 
 <xs:simpleType name="color3OrHexOrExpression">
   <xs:restriction base="xs:string">
-    <xs:pattern value="((0?\.\d+|0|1),(0?\.\d+|0|1),(0?\.\d+|0|1))|'#[0-9a-fA-F]{6}'|\{.+\}"/>
+    <xs:pattern value="((0?\.\d+|0|1),(0?\.\d+|0|1),(0?\.\d+|0|1))|#[0-9a-fA-F]{6}|\{.+\}"/>
   </xs:restriction>
 </xs:simpleType>
 
 <xs:simpleType name="color4OrHexOrExpression">
   <xs:restriction base="xs:string">
-    <xs:pattern value="((0?\.\d+|0|1),(0?\.\d+|0|1),(0?\.\d+|0|1),(0?\.\d+|0|1))|'#[0-9a-fA-F]{8}'|\{.+\}"/>
+    <xs:pattern value="((0?\.\d+|0|1),(0?\.\d+|0|1),(0?\.\d+|0|1),(0?\.\d+|0|1))|#[0-9a-fA-F]{8}|\{.+\}"/>
+  </xs:restriction>
+</xs:simpleType>
+
+<xs:simpleType name="hexOrExpression">
+  <xs:restriction base="xs:string">
+    <xs:pattern value="#[0-9a-fA-F]{6}|\{.+\}"/>
+  </xs:restriction>
+</xs:simpleType>
+
+<xs:simpleType name="arrayOrExpression">
+  <xs:restriction base="xs:string">
+    <xs:pattern value="\[[^,]*(,[^,]+)*\]|\{.+\}"/>
   </xs:restriction>
 </xs:simpleType>
 <!-- string regex types -->
@@ -169,7 +175,7 @@
 <xs:complexType name="modelLoaderType">
   <xs:complexContent>
     <xs:extension base="transformNodeType">
-      <xs:attribute name="url" type="stringOrExpression" use="required"/>
+      <xs:attribute name="url" type="xs:string" use="required"/>
       <xs:attribute name="shouldNormalize" type="booleanOrExpression"/>
       <xs:attribute name="updateModelAfterLoad" type="booleanOrExpression"/>
       <xs:attribute name="loaded" type="expression"/>
@@ -441,7 +447,7 @@
 
 <xs:complexType name="updatableTextureType">
   <xs:attribute name="name" type="identifier"/>
-  <xs:attribute name="url" type="stringOrExpression" use="required"/>
+  <xs:attribute name="url" type="xs:string" use="required"/>
   <xs:attribute name="noMipmap" type="booleanOrExpression"/>
   <xs:attribute name="invertY" type="booleanOrExpression"/>
   <xs:attribute name="samplingMode" type="posIntegerOrExpression"/>
@@ -496,38 +502,292 @@
 
 <xs:group name="controlOptions">
   <xs:choice>
-    <xs:element name="Rectangle"/>
-    <xs:element name="Ellipse"/>
-    <xs:element name="StackPanel"/>
-    <xs:element name="Grid"/>
-    <xs:element name="Button"/>
-    <xs:element name="Checkbox"/>
-    <xs:element name="RadioButton"/>
-    <xs:element name="Slider"/>
-    <xs:element name="TextBlock"/>
-    <xs:element name="InputText"/>
-    <xs:element name="Image"/>
+    <xs:element name="Button" type="buttonType"/>
+    <xs:element name="Checkbox" type="checkBoxType"/>
+    <xs:element name="Ellipse" type="ellipseType"/>
+    <xs:element name="Image" type="imageType"/>
+    <xs:element name="InputText" type="inputTextType"/>
+    <xs:element name="Line" type="lineType"/>
+    <xs:element name="RadioButton" type="radioButtonType"/>
+    <xs:element name="Rectangle" type="rectangleType"/>
+    <xs:element name="Slider" type="sliderType"/>
+    <xs:element name="StackPanel" type="stackPanelType"/>
+    <xs:element name="TextBlock" type="textBlockType"/>
   </xs:choice>
 </xs:group>
 
-<xs:complexType name="textureGuiType">
+<xs:complexType name="advancedDynamicTexture">
   <xs:sequence>
     <xs:group ref="controlOptions" maxOccurs="unbounded"/>
   </xs:sequence>
   <xs:attribute name="name" type="identifier"/>
-  <xs:attribute name="mesh" type="identifierOrExpression" use="required"/>
-  <xs:attribute name="width" type="posNumberOrExpression"/>
-  <xs:attribute name="height" type="posNumberOrExpression"/>
+  <xs:attribute name="premulAlpha" type="booleanOrExpression"/>
+  <xs:attribute name="background" type="hexOrExpression"/>
+  <xs:attribute name="clipboardData" type="xs:string"/>
+  <xs:attribute name="focusedControl" type="expression"/>
+  <xs:attribute name="hasAlpha" type="booleanOrExpression"/>
+  <xs:attribute name="renderScale" type="numberOrExpression"/>
+  <xs:attribute name="useInvalidateRectOptimization" type="booleanOrExpression"/>
+</xs:complexType>
+
+<xs:complexType name="textureGuiType">
+  <xs:complexContent>
+    <xs:extension base="advancedDynamicTexture">
+      <xs:attribute name="mesh" type="identifier" use="required"/>
+      <xs:attribute name="width" type="posNumberOrExpression"/>
+      <xs:attribute name="height" type="posNumberOrExpression"/>
+      <xs:attribute name="alpha" type="zeroToOneOrExpression"/>
+    </xs:extension>
+  </xs:complexContent>
 </xs:complexType>
 
 <xs:complexType name="fullScreenType">
-  <xs:sequence>
-    <xs:group ref="controlOptions" maxOccurs="unbounded"/>
-  </xs:sequence>
+  <xs:complexContent>
+    <xs:extension base="advancedDynamicTexture">
+      <xs:attribute name="idealWidth" type="posNumberOrExpression"/>
+      <xs:attribute name="idealHeight" type="posNumberOrExpression"/>
+      <xs:attribute name="isForeground" type="booleanOrExpression"/>
+      <xs:attribute name="renderAtIdealSize" type="booleanOrExpression"/>
+      <xs:attribute name="useSmallestIdeal" type="booleanOrExpression"/>
+    </xs:extension>
+  </xs:complexContent>
+</xs:complexType>
+
+<xs:complexType name="controlType">
   <xs:attribute name="name" type="identifier"/>
-  <xs:attribute name="linkWithMesh" type="identifierOrExpression"/>
+  <xs:attribute name="clipChildren" type="booleanOrExpression"/>
+  <xs:attribute name="clipContent" type="booleanOrExpression"/>
+  <xs:attribute name="fixedRatio" type="numberOrExpression"/>
+  <xs:attribute name="hoverCursor" type="xs:string"/>
+  <xs:attribute name="isFocusInvisible" type="booleanOrExpression"/>
+  <xs:attribute name="isHitTestVisible" type="booleanOrExpression"/>
+  <xs:attribute name="isPointerBlocker" type="booleanOrExpression"/>
+  <xs:attribute name="useBitmapCache" type="booleanOrExpression"/>
+  <xs:attribute name="alpha" type="zeroToOneOrExpression"/>
+  <xs:attribute name="color" type="hexOrExpression"/>
+  <xs:attribute name="disabledColor" type="hexOrExpression"/>
+  <xs:attribute name="disabledColorItem" type="hexOrExpression"/>
+  <xs:attribute name="fontFamily" type="xs:string"/>
+  <xs:attribute name="fontOffset" type="expression"/>
+  <xs:attribute name="fontSize" type="xs:string"/>
+  <xs:attribute name="fontStyle" type="xs:string"/>
+  <xs:attribute name="fontWeight" type="xs:string"/>
+  <xs:attribute name="height" type="xs:string"/>
+  <xs:attribute name="horizontalAlignment" type="posIntegerOrExpression"/>
+  <xs:attribute name="isEnabled" type="booleanOrExpression"/>
+  <xs:attribute name="isHighlighted" type="booleanOrExpression"/>
+  <xs:attribute name="isVisible" type="booleanOrExpression"/>
+  <xs:attribute name="left" type="xs:string"/>
   <xs:attribute name="linkOffsetX" type="numberOrExpression"/>
   <xs:attribute name="linkOffsetY" type="numberOrExpression"/>
+  <xs:attribute name="linkWithMesh" type="identifier"/>
+  <xs:attribute name="notRenderable" type="booleanOrExpression"/>
+  <xs:attribute name="paddingBottom" type="xs:string"/>
+  <xs:attribute name="paddingLeft" type="xs:string"/>
+  <xs:attribute name="paddingRight" type="xs:string"/>
+  <xs:attribute name="paddingTop" type="xs:string"/>
+  <xs:attribute name="rotation" type="numberOrExpression"/>
+  <xs:attribute name="scaleX" type="numberOrExpression"/>
+  <xs:attribute name="scaleY" type="numberOrExpression"/>
+  <xs:attribute name="shadowBlur" type="numberOrExpression"/>
+  <xs:attribute name="shadowColor" type="hexOrExpression"/>
+  <xs:attribute name="shadowOffsetX" type="numberOrExpression"/>
+  <xs:attribute name="shadowOffsetY" type="numberOrExpression"/>
+  <xs:attribute name="style" type="expression"/>
+  <xs:attribute name="top" type="numberOrExpression"/>
+  <xs:attribute name="transformCenterX" type="numberOrExpression"/>
+  <xs:attribute name="transformCenterY" type="numberOrExpression"/>
+  <xs:attribute name="verticalAlignment" type="posIntegerOrExpression"/>
+  <xs:attribute name="width" type="xs:string"/>
+  <xs:attribute name="zIndex" type="numberOrExpression"/>
+  <xs:attribute name="onPointerClick" type="expression"/>
+  <xs:attribute name="onPointerDown" type="expression"/>
+  <xs:attribute name="onPointerEnter" type="expression"/>
+  <xs:attribute name="onPointerMove" type="expression"/>
+  <xs:attribute name="onPointerOut" type="expression"/>
+  <xs:attribute name="onPointerUp" type="expression"/>
+</xs:complexType>
+
+<xs:complexType name="textBlockType">
+  <xs:complexContent>
+    <xs:extension base="controlType">
+      <xs:attribute name="wordSplittingFunction" type="expression"/>
+      <xs:attribute name="lineSpacing" type="xs:string"/>
+      <xs:attribute name="outlineColor" type="hexOrExpression"/>
+      <xs:attribute name="outlineWidth" type="numberOrExpression"/>
+      <xs:attribute name="resizeToFit" type="booleanOrExpression"/>
+      <xs:attribute name="text" type="xs:string"/>
+      <xs:attribute name="textHorizontalAlignment" type="posIntegerOrExpression"/>
+      <xs:attribute name="textVerticalAlignment" type="posIntegerOrExpression"/>
+      <xs:attribute name="textWrapping" type="booleanOrExpression"/>
+    </xs:extension>
+  </xs:complexContent>
+</xs:complexType>
+
+<xs:complexType name="imageType">
+  <xs:complexContent>
+    <xs:extension base="controlType">
+      <xs:attribute name="autoScale" type="booleanOrExpression"/>
+      <xs:attribute name="cellHeight" type="numberOrExpression"/>
+      <xs:attribute name="cellId" type="posIntegerOrExpression"/>
+      <xs:attribute name="cellWidth" type="numberOrExpression"/>
+      <xs:attribute name="detectPointerOnOpaqueOnly" type="booleanOrExpression"/>
+      <xs:attribute name="domImage" type="expression"/>
+      <xs:attribute name="populateNinePatchSlicesFromImage" type="booleanOrExpression"/>
+      <xs:attribute name="sliceBottom" type="numberOrExpression"/>
+      <xs:attribute name="sliceLeft" type="numberOrExpression"/>
+      <xs:attribute name="sliceRight" type="numberOrExpression"/>
+      <xs:attribute name="sliceTop" type="numberOrExpression"/>
+      <xs:attribute name="source" type="xs:string"/>
+      <xs:attribute name="sourceHeight" type="numberOrExpression"/>
+      <xs:attribute name="sourceLeft" type="numberOrExpression"/>
+      <xs:attribute name="sourceTop" type="numberOrExpression"/>
+      <xs:attribute name="sourceWidth" type="numberOrExpression"/>
+      <xs:attribute name="stretch" type="posIntegerOrExpression"/>
+      <xs:attribute name="onImageLoaded" type="expression"/>
+    </xs:extension>
+  </xs:complexContent>
+</xs:complexType>
+
+<xs:complexType name="checkBoxType">
+  <xs:complexContent>
+    <xs:extension base="controlType">
+      <xs:attribute name="background" type="hexOrExpression"/>
+      <xs:attribute name="checkSizeRatio" type="numberOrExpression"/>
+      <xs:attribute name="isChecked" type="booleanOrExpression"/>
+      <xs:attribute name="thickness" type="numberOrExpression"/>
+      <xs:attribute name="onIsCheckedChanged" type="expression"/>
+    </xs:extension>
+  </xs:complexContent>
+</xs:complexType>
+
+<xs:complexType name="inputTextType">
+  <xs:complexContent>
+    <xs:extension base="controlType">
+      <xs:attribute name="disableMobilePrompt" type="booleanOrExpression"/>
+      <xs:attribute name="promptMessage" type="xs:string"/>
+      <xs:attribute name="addKey" type="booleanOrExpression"/>
+      <xs:attribute name="autoStretchWidth" type="booleanOrExpression"/>
+      <xs:attribute name="background" type="hexOrExpression"/>
+      <xs:attribute name="currentKey" type="xs:string"/>
+      <xs:attribute name="deadKey" type="booleanOrExpression"/>
+      <xs:attribute name="focusedBackground" type="hexOrExpression"/>
+      <xs:attribute name="focusedColor" type="hexOrExpression"/>
+      <xs:attribute name="highlighterOpacity" type="zeroToOneOrExpression"/>
+      <xs:attribute name="highlightedText" type="xs:string"/>
+      <xs:attribute name="margin" type="xs:string"/>
+      <xs:attribute name="marginInPixels" type="numberOrExpression"/>
+      <xs:attribute name="maxWidth" type="xs:string"/>
+      <xs:attribute name="onFocusSelectAll" type="booleanOrExpression"/>
+      <xs:attribute name="placeholderColor" type="hexOrExpression"/>
+      <xs:attribute name="placeholderText" type="xs:string"/>
+      <xs:attribute name="text" type="xs:string"/>
+      <xs:attribute name="textHighlightColor" type="hexOrExpression"/>
+      <xs:attribute name="thickness" type="numberOrExpression"/>
+      <xs:attribute name="onBeforeKeyAdd" type="expression"/>
+      <xs:attribute name="onBlur" type="expression"/>
+      <xs:attribute name="onFocus" type="expression"/>
+      <xs:attribute name="onKeyboardEventProcessed" type="expression"/>
+      <xs:attribute name="onTextChanged" type="expression"/>
+      <xs:attribute name="onTextCopy" type="expression"/>
+      <xs:attribute name="onTextCut" type="expression"/>
+      <xs:attribute name="onTextHighlight" type="expression"/>
+      <xs:attribute name="onTextPaste" type="expression"/>
+    </xs:extension>
+  </xs:complexContent>
+</xs:complexType>
+
+<xs:complexType name="lineType">
+  <xs:complexContent>
+    <xs:extension base="controlType">
+      <xs:attribute name="dash" type="arrayOrExpression"/>
+      <xs:attribute name="lineWidth" type="numberOrExpression"/>
+      <xs:attribute name="x1" type="xs:string"/>
+      <xs:attribute name="x2" type="xs:string"/>
+      <xs:attribute name="y1" type="xs:string"/>
+      <xs:attribute name="y2" type="xs:string"/>
+    </xs:extension>
+  </xs:complexContent>
+</xs:complexType>
+
+<xs:complexType name="radioButtonType">
+  <xs:complexContent>
+    <xs:extension base="checkBoxType">
+      <xs:attribute name="group" type="xs:string"/>
+    </xs:extension>
+  </xs:complexContent>
+</xs:complexType>
+
+<xs:complexType name="sliderType">
+  <xs:complexContent>
+    <xs:extension base="controlType">
+      <xs:attribute name="background" type="hexOrExpression"/>
+      <xs:attribute name="barOffset" type="xs:string"/>
+      <xs:attribute name="borderColor" type="hexOrExpression"/>
+      <xs:attribute name="displayThumb" type="booleanOrExpression"/>
+      <xs:attribute name="displayValueBar" type="booleanOrExpression"/>
+      <xs:attribute name="isThumbCircle" type="booleanOrExpression"/>
+      <xs:attribute name="isThumbClamped" type="booleanOrExpression"/>
+      <xs:attribute name="isVertical" type="booleanOrExpression"/>
+      <xs:attribute name="maximum" type="numberOrExpression"/>
+      <xs:attribute name="minimum" type="numberOrExpression"/>
+      <xs:attribute name="step" type="numberOrExpression"/>
+      <xs:attribute name="thumbWidth" type="xs:string"/>
+      <xs:attribute name="value" type="numberOrExpression"/>
+    </xs:extension>
+  </xs:complexContent>
+</xs:complexType>
+
+<xs:complexType name="containerType">
+  <xs:complexContent>
+    <xs:extension base="controlType">
+      <xs:sequence>
+        <xs:group ref="controlOptions" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:attribute name="adaptHeightToChildren" type="booleanOrExpression"/>
+      <xs:attribute name="adaptWidthToChildren" type="booleanOrExpression"/>
+      <xs:attribute name="background" type="hexOrExpression"/>
+      <xs:attribute name="logLayoutCycleErrors" type="booleanOrExpression"/>
+      <xs:attribute name="maxLayoutCycle" type="posIntegerOrExpression"/>
+    </xs:extension>
+  </xs:complexContent>
+</xs:complexType>
+
+<xs:complexType name="stackPanelType">
+  <xs:complexContent>
+    <xs:extension base="containerType">
+      <xs:attribute name="ignoreLayoutWarnings" type="booleanOrExpression"/>
+      <xs:attribute name="isVertical" type="booleanOrExpression"/>
+    </xs:extension>
+  </xs:complexContent>
+</xs:complexType>
+
+<xs:complexType name="ellipseType">
+  <xs:complexContent>
+    <xs:extension base="containerType">
+      <xs:attribute name="thickness" type="numberOrExpression"/>
+    </xs:extension>
+  </xs:complexContent>
+</xs:complexType>
+
+<xs:complexType name="rectangleType">
+  <xs:complexContent>
+    <xs:extension base="ellipseType">
+      <xs:attribute name="cornerRadius" type="numberOrExpression"/>
+    </xs:extension>
+  </xs:complexContent>
+</xs:complexType>
+
+<xs:complexType name="buttonType">
+  <xs:complexContent>
+    <xs:extension base="rectangleType">
+      <xs:attribute name="delegatePickingToChildren" type="booleanOrExpression"/>
+      <xs:attribute name="pointerDownAnimation" type="expression"/>
+      <xs:attribute name="pointerEnterAnimation" type="expression"/>
+      <xs:attribute name="pointerOutAnimation" type="expression"/>
+      <xs:attribute name="pointerUpAnimation" type="expression"/>
+    </xs:extension>
+  </xs:complexContent>
 </xs:complexType>
 <!-- Guis -->
 
