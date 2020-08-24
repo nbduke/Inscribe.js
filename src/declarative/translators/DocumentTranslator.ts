@@ -23,10 +23,10 @@ export interface IImportsTracker {
   inscribe: Set<string>;
 }
 
-export interface ISharedObjects {
-  materials: Set<string>;
-  textures: Set<string>;
-  meshInitMethods: Map<string, MethodBuilder>;
+export interface IReferenceableObjects {
+  materials: Map<string, MethodBuilder>;
+  textures: Map<string, MethodBuilder>;
+  nodes: Map<string, MethodBuilder>;
 }
 
 export default class DocumentTranslator {
@@ -44,7 +44,7 @@ export default class DocumentTranslator {
   private _class!: ClassBuilder;
   private _explicitImports!: string[];
   private _implicitImports!: IImportsTracker;
-  private _sharedObjects!: ISharedObjects;
+  private _referenceableObjects!: IReferenceableObjects;
 
   constructor(babylonLib: string, inscribeLib: string) {
     this._babylonLib = babylonLib;
@@ -60,14 +60,14 @@ export default class DocumentTranslator {
       babylon: new Set(['Node', 'Scene']),
       inscribe: new Set(['BindingEngine', 'Event', 'IPropertyChangedArgs'])
     };
-    this._sharedObjects = {
-      materials: new Set(),
-      textures: new Set(),
-      meshInitMethods: new Map()
+    this._referenceableObjects = {
+      materials: new Map(),
+      textures: new Map(),
+      nodes: new Map()
     };
 
     this._setupVariablesAndMethods();
-    this._recordSharedObjects(root);
+    this._getSharedMaterialsAndTextures(root);
     root.childNodes().forEach(section => this._translateSection(section));
 
     const classOutput: string = this._class.toString();
@@ -113,7 +113,7 @@ export default class DocumentTranslator {
     this._class.addMethod(initMethod);
   }
 
-  private _recordSharedObjects(root: Element): void {
+  private _getSharedMaterialsAndTextures(root: Element): void {
     root.childNodes().forEach(sectionElement => {
       if (sectionElement.name() === 'Materials') {
         sectionElement.childNodes().forEach(materialElement => {
@@ -122,7 +122,7 @@ export default class DocumentTranslator {
             throw new Error('Shared materials must be named.');
           }
 
-          this._sharedObjects.materials.add(name);
+          this._referenceableObjects.materials.set(name, this._class.getMethod(this._memberNames.init)!);
         });
       } else if (sectionElement.name() === 'Textures') {
         sectionElement.childNodes().forEach(textureElement => {
@@ -131,7 +131,7 @@ export default class DocumentTranslator {
             throw new Error('Shared textures must be named.');
           }
 
-          this._sharedObjects.textures.add(name);
+          this._referenceableObjects.textures.set(name, this._class.getMethod(this._memberNames.init)!);
         });
       }
     });
@@ -157,7 +157,7 @@ export default class DocumentTranslator {
         const nodeTranslator: NodeTranslator = new NodeTranslator(
           this._class,
           this._implicitImports,
-          this._sharedObjects,
+          this._referenceableObjects,
           this._memberNames
         );
         nodeTranslator.translate(section);
@@ -167,7 +167,7 @@ export default class DocumentTranslator {
         const materialTranslator: MaterialTranslator = new MaterialTranslator(
           this._class,
           this._implicitImports,
-          this._sharedObjects,
+          this._referenceableObjects,
           this._memberNames
         );
         section.childNodes().forEach(materialElement => {
@@ -179,6 +179,7 @@ export default class DocumentTranslator {
         const textureTranslator: TextureTranslator = new TextureTranslator(
           this._class,
           this._implicitImports,
+          this._referenceableObjects,
           this._memberNames
         );
         section.childNodes().forEach(textureElement => {
@@ -191,7 +192,7 @@ export default class DocumentTranslator {
           this._class,
           this._implicitImports,
           this._memberNames,
-          this._sharedObjects.meshInitMethods
+          this._referenceableObjects.nodes
         );
         guiTranslator.translate(section);
         break;
