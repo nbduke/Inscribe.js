@@ -107,7 +107,7 @@ export default class DocumentTranslator {
       `  this.${this._memberNames.scene} = root.getScene();`,
       `}`,
       `this.${this._memberNames.host} = scriptProvider;`,
-      `this.${this._memberNames.bindingEngine} = new BindingEngine();`,
+      `this.${this._memberNames.bindingEngine} = new BindingEngine(this);`,
       `this.${this._memberNames.propertyChanged} = new Event();`
     );
     this._class.addMethod(initMethod);
