@@ -13,7 +13,7 @@ describe('getObjectNames', () => {
     expect(objectNames).toEqual({
       privateName: `x_${name}`,
       publicName: name,
-      isNameGenerated: false
+      isReferenceable: true
     });
   });
 
@@ -23,7 +23,7 @@ describe('getObjectNames', () => {
     expect(objectNames).toEqual({
       privateName: `x_${type}1`,
       publicName: type + '1',
-      isNameGenerated: true
+      isReferenceable: false
     });
   });
 
@@ -35,12 +35,12 @@ describe('getObjectNames', () => {
     expect(objectNames1).toEqual({
       privateName: `x_${type}1`,
       publicName: type + '1',
-      isNameGenerated: true
+      isReferenceable: false
     });
     expect(objectNames2).toEqual({
       privateName: `x_${type}2`,
       publicName: type + '2',
-      isNameGenerated: true
+      isReferenceable: false
     });
   });
 
@@ -48,7 +48,7 @@ describe('getObjectNames', () => {
     const objectNames: IObjectNames = {
       privateName: 'x_foo',
       publicName: 'foo',
-      isNameGenerated: false
+      isReferenceable: true
     };
     const objectType: string = 'Car';
     let classBuilder: ClassBuilder;
@@ -81,17 +81,17 @@ describe('getObjectNames', () => {
       );
     });
 
-    it('declares protected setter if name is not generated', () => {
+    it('declares protected setter if object is referenceable', () => {
       declareObject(objectType, objectNames, false, classBuilder);
       const expectedProperty: PropertyBuilder = new PropertyBuilder(objectNames.publicName, objectType, 'protected');
       expectedProperty.addToGetterBody(`return this.${objectNames.privateName};`);
       expect(classBuilder.addProperty).toHaveBeenCalledWith(expectedProperty);
     });
 
-    it('does not declare setter if name is generated', () => {
-      objectNames.isNameGenerated = true;
+    it('does not declare setter if object is not referenceable', () => {
+      objectNames.isReferenceable = false;
       declareObject(objectType, objectNames, false, classBuilder);
-      objectNames.isNameGenerated = false;
+      objectNames.isReferenceable = true;
       expect(classBuilder.addProperty).not.toHaveBeenCalled();
     });
 

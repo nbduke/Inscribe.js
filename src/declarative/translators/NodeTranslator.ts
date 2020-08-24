@@ -2,7 +2,7 @@ import { Element, Attribute } from 'libxmljs';
 
 import ClassBuilder, { lineDelim } from '../builders/ClassBuilder';
 import MethodBuilder from '../builders/MethodBuilder';
-import { IMemberNames, IImportsTracker, ISharedObjects } from './DocumentTranslator';
+import { IMemberNames, IImportsTracker, IReferenceableObjects } from './DocumentTranslator';
 import { IObjectNames, getObjectNames, declareObject } from './ObjectNames';
 import AttributeTranslator, { IAttributeInfo } from './AttributeTranslator';
 import MaterialTranslator from './MaterialTranslator';
@@ -24,19 +24,19 @@ const customNodeMetaProps: Set<string> = new Set([
 export default class NodeTranslator {
   private readonly _class: ClassBuilder;
   private readonly _importsTracker: IImportsTracker;
-  private readonly _sharedObjects: ISharedObjects;
+  private readonly _referenceableObjects: IReferenceableObjects;
   private readonly _memberNames: IMemberNames;
   private readonly _attributeTranslator: AttributeTranslator;
 
   constructor(
     classBuilder: ClassBuilder,
     importsTracker: IImportsTracker,
-    sharedObjects: ISharedObjects,
+    referenceableObjects: IReferenceableObjects,
     memberNames: IMemberNames
   ) {
     this._class = classBuilder;
     this._importsTracker = importsTracker;
-    this._sharedObjects = sharedObjects;
+    this._referenceableObjects = referenceableObjects;
     this._memberNames = memberNames;
     this._attributeTranslator = new AttributeTranslator(importsTracker, memberNames);
   }
@@ -134,8 +134,8 @@ export default class NodeTranslator {
       `this.${name}.parent = this.${parentName};`
     );
 
-    if (!objectNames.isNameGenerated) {
-      this._sharedObjects.meshInitMethods.set(objectNames.publicName, initMethod);
+    if (objectNames.isReferenceable) {
+      this._referenceableObjects.nodes.set(objectNames.publicName, initMethod);
     }
 
     attributeInfos.forEach(info => {
@@ -156,19 +156,14 @@ export default class NodeTranslator {
   }
 
   private _handleMaterialAttribute(nodeName: string, materialName: string, nodeInitMethod: MethodBuilder): void {
-    if (!this._sharedObjects.materials.has(materialName)) {
-      throw new Error(`Shared material not found: ${materialName}`);
+    if (!this._referenceableObjects.materials.has(materialName)) {
+      throw new Error(`Material reference not found: ${materialName}`);
     }
     const ensureMethodName: string = `_ensure_${materialName}`;
-    if (!this._class.hasMethod(ensureMethodName)) {
-      const ensureMethod: MethodBuilder = new MethodBuilder(
-        ensureMethodName,
-        'Material',
-        'private'
-      );
-      this._class.addMethod(ensureMethod);
-      this._importsTracker.babylon.add('Material');
-    }
+    const ensureMethod: MethodBuilder = new MethodBuilder(ensureMethodName, 'Material', 'private');
+    this._class.addMethod(ensureMethod);
+    this._referenceableObjects.materials.set(materialName, ensureMethod); // replace init method with ensure method
+    this._importsTracker.babylon.add('Material');
     nodeInitMethod.addToBody(
       `this.${nodeName}.material = this.${ensureMethodName}();`
     );
@@ -231,8 +226,8 @@ export default class NodeTranslator {
       `this.${objectNames.privateName} = (${factory})({${propsObject}}, this.${parentName});`
     );
 
-    if (!objectNames.isNameGenerated) {
-      this._sharedObjects.meshInitMethods.set(objectNames.publicName, initMethod);
+    if (objectNames.isReferenceable) {
+      this._referenceableObjects.nodes.set(objectNames.publicName, initMethod);
     }
 
     attributeInfos.forEach(info => {
@@ -284,7 +279,7 @@ export default class NodeTranslator {
     const materialTranslator: MaterialTranslator = new MaterialTranslator(
       this._class,
       this._importsTracker,
-      this._sharedObjects,
+      this._referenceableObjects,
       this._memberNames
     );
     materialTranslator.translateNodeMaterial(element.child(0)!, parentName, deferredGroup);

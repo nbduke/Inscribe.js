@@ -2,8 +2,8 @@ import { Element, Attribute } from 'libxmljs';
 
 import ClassBuilder from '../builders/ClassBuilder';
 import { IMemberNames, IImportsTracker } from './DocumentTranslator';
-import AttributeTranslator, { IAttributeInfo } from './AttributeTranslator';
-import { IObjectNames, getObjectNames, declareObject } from './ObjectNames';
+import AttributeTranslator from './AttributeTranslator';
+import { IObjectNames, getObjectNames, declareObject, getPrivateNameFor } from './ObjectNames';
 import MethodBuilder from '../builders/MethodBuilder';
 
 const guiObservables: Set<string> = new Set([
@@ -85,13 +85,13 @@ export default class GuiTranslator {
 
     const meshIdentifier: string = ctorArgs[0];
     if (!this._meshInitMethods.has(meshIdentifier)) {
-      throw new Error(`Referenced mesh not found: ${meshIdentifier}`);
+      throw new Error(`Mesh reference not found: ${meshIdentifier}`);
     }
 
     const initMethod: MethodBuilder = this._meshInitMethods.get(meshIdentifier)!;
     declareObject('AdvancedDynamicTexture', objectNames, initMethod.name !== this._memberNames.init, this._class);
 
-    const meshName: string = getObjectNames('Mesh', meshIdentifier).privateName;
+    const meshName: string = getPrivateNameFor(meshIdentifier);
     initMethod.addToBody(
       `this.${objectNames.privateName} = AdvancedDynamicTexture.CreateForMesh(this.${meshName}, ${ctorArgs[1]}, ${ctorArgs[2]});`
     );

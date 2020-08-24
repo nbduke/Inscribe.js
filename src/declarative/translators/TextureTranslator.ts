@@ -2,7 +2,7 @@ import { Element, Attribute } from 'libxmljs';
 
 import ClassBuilder from '../builders/ClassBuilder';
 import MethodBuilder from '../builders/MethodBuilder';
-import { IMemberNames, IImportsTracker } from './DocumentTranslator';
+import { IMemberNames, IImportsTracker, IReferenceableObjects } from './DocumentTranslator';
 import { IObjectNames, getObjectNames, declareObject } from './ObjectNames';
 import AttributeTranslator from './AttributeTranslator';
 
@@ -18,16 +18,19 @@ const updatableTextureObservables: Set<string> = new Set([
 export default class TextureTranslator {
   private readonly _class: ClassBuilder;
   private readonly _importsTracker: IImportsTracker;
+  private readonly _referenceableObjects: IReferenceableObjects;
   private readonly _memberNames: IMemberNames;
   private readonly _attributeTranslator: AttributeTranslator;
 
   constructor(
     classBuilder: ClassBuilder,
     importsTracker: IImportsTracker,
+    referenceableObjects: IReferenceableObjects,
     memberNames: IMemberNames
   ) {
     this._class = classBuilder;
     this._importsTracker = importsTracker;
+    this._referenceableObjects = referenceableObjects;
     this._memberNames = memberNames;
     this._attributeTranslator = new AttributeTranslator(importsTracker, memberNames);
   }
@@ -36,19 +39,15 @@ export default class TextureTranslator {
     const textureType: string = textureElement.name();
     const name: string = textureElement.attr('name')!.value();
     const objectNames: IObjectNames = getObjectNames(textureType, name);
-    const ensureMethodName: string = `_ensure_${name}`;
-    const hasEnsureMethod: boolean = this._class.hasMethod(ensureMethodName);
-    let initMethod: MethodBuilder;
+    const initMethod: MethodBuilder = this._referenceableObjects.textures.get(name)!;
+    const hasEnsureMethod: boolean = initMethod.name !== this._memberNames.init;
+
+    declareObject(textureType, objectNames, hasEnsureMethod, this._class);
 
     if (hasEnsureMethod) {
-      initMethod = this._class.getMethod(ensureMethodName)!;
-      declareObject(textureType, objectNames, true, this._class);
       initMethod.addToBody(
         `if (this.${objectNames.privateName}) return this.${objectNames.privateName};`
-      );
-    } else {
-      initMethod = this._class.getMethod(this._memberNames.init)!;
-      declareObject(textureType, objectNames, false, this._class);
+      ); 
     }
 
     this._translateTexture(textureElement, objectNames, initMethod);

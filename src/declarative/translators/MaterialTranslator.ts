@@ -2,7 +2,7 @@ import { Element } from 'libxmljs';
 
 import ClassBuilder from '../builders/ClassBuilder';
 import MethodBuilder from '../builders/MethodBuilder';
-import { IMemberNames, IImportsTracker, ISharedObjects } from './DocumentTranslator';
+import { IMemberNames, IImportsTracker, IReferenceableObjects } from './DocumentTranslator';
 import { IObjectNames, getObjectNames, declareObject } from './ObjectNames';
 import AttributeTranslator from './AttributeTranslator';
 import TextureTranslator from './TextureTranslator';
@@ -25,19 +25,19 @@ const textureSlots: Map<string, Set<string>> = new Map([
 export default class MaterialTranslator {
   private readonly _class: ClassBuilder;
   private readonly _importsTracker: IImportsTracker;
-  private readonly _sharedObjects: ISharedObjects;
+  private readonly _referenceableObjects: IReferenceableObjects;
   private readonly _memberNames: IMemberNames;
   private readonly _attributeTranslator: AttributeTranslator;
 
   constructor(
     classBuilder: ClassBuilder,
     importsTracker: IImportsTracker,
-    sharedObjects: ISharedObjects,
+    referenceableObjects: IReferenceableObjects,
     memberNames: IMemberNames
   ) {
     this._class = classBuilder;
     this._importsTracker = importsTracker;
-    this._sharedObjects = sharedObjects;
+    this._referenceableObjects = referenceableObjects;
     this._memberNames = memberNames;
     this._attributeTranslator = new AttributeTranslator(importsTracker, memberNames);
   }
@@ -46,19 +46,15 @@ export default class MaterialTranslator {
     const materialType: string = materialElement.name();
     const name: string = materialElement.attr('name')!.value();
     const objectNames: IObjectNames = getObjectNames(materialType, name);
-    const ensureMethodName: string = `_ensure_${name}`;
-    const hasEnsureMethod: boolean = this._class.hasMethod(ensureMethodName);
-    let initMethod: MethodBuilder;
+    const initMethod: MethodBuilder = this._referenceableObjects.materials.get(name)!;
+    const hasEnsureMethod: boolean = initMethod.name !== this._memberNames.init;
+
+    declareObject(materialType, objectNames, hasEnsureMethod, this._class);
 
     if (hasEnsureMethod) {
-      initMethod = this._class.getMethod(ensureMethodName)!;
-      declareObject(materialType, objectNames, true, this._class);
       initMethod.addToBody(
         `if (this.${objectNames.privateName}) return this.${objectNames.privateName};`
       );
-    } else {
-      initMethod = this._class.getMethod(this._memberNames.init)!;
-      declareObject(materialType, objectNames, false, this._class);
     }
 
     this._translateMaterial(materialElement, objectNames, initMethod);
@@ -120,18 +116,14 @@ export default class MaterialTranslator {
     textureName: string,
     materialInitMethod: MethodBuilder
   ): void {
-    if (!this._sharedObjects.textures.has(textureName)) {
-      throw new Error(`Shared texture not found: ${textureName}`);
+    if (!this._referenceableObjects.textures.has(textureName)) {
+      throw new Error(`Texture reference not found: ${textureName}`);
     }
     const ensureMethodName: string = `_ensure_${textureName}`;
-    if (!this._class.hasMethod(ensureMethodName)) {
-      const ensureMethod: MethodBuilder = new MethodBuilder(
-        ensureMethodName,
-        'Texture',
-        'private'
-      );
-      this._class.addMethod(ensureMethod);
-    }
+    const ensureMethod: MethodBuilder = new MethodBuilder(ensureMethodName, 'Texture', 'private');
+    this._class.addMethod(ensureMethod);
+    this._referenceableObjects.textures.set(textureName, ensureMethod); // replace init method with ensure method
+    this._importsTracker.babylon.add('Texture');
     materialInitMethod.addToBody(
       `this.${materialName}.${textureSlot} = this.${ensureMethodName}();`
     );
@@ -147,6 +139,7 @@ export default class MaterialTranslator {
     const textureTranslator: TextureTranslator = new TextureTranslator(
       this._class,
       this._importsTracker,
+      this._referenceableObjects,
       this._memberNames
     );
     textureTranslator.translateMaterialTexture(
