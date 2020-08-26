@@ -21,6 +21,7 @@ export interface IMemberNames {
 export interface IImportsTracker {
   babylon: Set<string>;
   inscribe: Set<string>;
+  lodash: Set<string>;
 }
 
 export interface IReferenceableObjects {
@@ -58,7 +59,8 @@ export default class DocumentTranslator {
     this._explicitImports = [];
     this._implicitImports = {
       babylon: new Set(['Node', 'Scene']),
-      inscribe: new Set(['BindingEngine', 'Event', 'IPropertyChangedArgs'])
+      inscribe: new Set(['BindingEngine', 'Event']),
+      lodash: new Set()
     };
     this._referenceableObjects = {
       materials: new Map(),
@@ -80,13 +82,6 @@ export default class DocumentTranslator {
     this._class.addMemberVariable(this._memberNames.scene, 'Scene', 'private', undefined, '!');
     this._class.addMemberVariable(this._memberNames.host, 'any', 'private', undefined, '!');
     this._class.addMemberVariable(this._memberNames.bindingEngine, 'BindingEngine', 'private', undefined, '!');
-    this._class.addMemberVariable(
-      this._memberNames.propertyChanged,
-      'Event<IPropertyChangedArgs>',
-      'public',
-      undefined,
-      '!'
-    );
     this._class.addMemberVariable('_isInitialized', 'boolean', 'private', 'false');
 
     const initMethod: MethodBuilder = new MethodBuilder(
@@ -108,7 +103,9 @@ export default class DocumentTranslator {
       `}`,
       `this.${this._memberNames.host} = scriptProvider;`,
       `this.${this._memberNames.bindingEngine} = new BindingEngine(this);`,
-      `this.${this._memberNames.propertyChanged} = new Event();`
+      `if (!scriptProvider.${this._memberNames.propertyChanged}) {
+        scriptProvider.${this._memberNames.propertyChanged} = new Event();
+      }`
     );
     this._class.addMethod(initMethod);
   }
@@ -140,7 +137,10 @@ export default class DocumentTranslator {
   private _translateSection(section: Element): void {
     switch (section.name()) {
       case 'Imports':
-        const importLines: string[] = section.child(0)!.text().split(/(\r?\n)+/);
+        // Split around line endings, removing any empty or whitespace-only strings
+        const importLines: string[] = section.child(0)!.text()
+          .split(/\r?\n/)
+          .filter(s => !/^\s*$/.test(s));
         this._explicitImports.push(...importLines);
         break;
 
@@ -201,10 +201,12 @@ export default class DocumentTranslator {
 
   private _compileImports(): string {
     const babylonTypes: string[] = Array.from(this._implicitImports.babylon).sort();
-    const babylonImports: string = `import {${babylonTypes.join(',' + lineDelim)}} from ${this._babylonLib};`;
+    const babylonImports: string = `import { ${babylonTypes.join(',' + lineDelim)} } from '${this._babylonLib}';`;
     const inscribeTypes: string[] = Array.from(this._implicitImports.inscribe).sort();
-    const inscribeImports: string = `import {${inscribeTypes.join(',' + lineDelim)}} from ${this._inscribeLib};`;
+    const inscribeImports: string = `import { ${inscribeTypes.join(',' + lineDelim)} } from '${this._inscribeLib}';`;
+    const lodashTypes: string[] = Array.from(this._implicitImports.lodash).sort();
+    const lodashImports: string = `import { ${lodashTypes.join(',' + lineDelim)} } from 'lodash';`;
 
-    return [...this._explicitImports, babylonImports, inscribeImports].join(lineDelim);
+    return [...this._explicitImports, babylonImports, inscribeImports, lodashImports].join(lineDelim);
   }
 }

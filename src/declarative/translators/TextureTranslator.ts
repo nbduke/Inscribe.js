@@ -9,6 +9,7 @@ import AttributeTranslator from './AttributeTranslator';
 export interface IMaterialInfo {
   name: string;
   textureSlot: string;
+  initMethod: MethodBuilder;
 }
 
 const updatableTextureObservables: Set<string> = new Set([
@@ -57,18 +58,12 @@ export default class TextureTranslator {
     }
   }
 
-  public translateMaterialTexture(
-    textureElement: Element,
-    materialInfo: IMaterialInfo,
-    deferredGroup?: string
-  ): void {
+  public translateMaterialTexture(textureElement: Element, materialInfo: IMaterialInfo): void {
     const textureType: string = textureElement.name();
     const name: string | undefined = textureElement.attr('name')?.value();
     const objectNames: IObjectNames = getObjectNames(textureType, name);
-    declareObject(textureType, objectNames, !!deferredGroup, this._class);
-
-    const initMethod: MethodBuilder = this._class.getMethod(deferredGroup ?? this._memberNames.init)!;
-    this._translateTexture(textureElement, objectNames, initMethod, materialInfo);
+    declareObject(textureType, objectNames, materialInfo.initMethod.name !== this._memberNames.init, this._class);
+    this._translateTexture(textureElement, objectNames, materialInfo.initMethod, materialInfo);
   }
 
   private _translateTexture(

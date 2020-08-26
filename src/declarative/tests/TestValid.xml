@@ -27,7 +27,7 @@
           factory="{(props, parent) => new MyOtherView(props)}"
           node.position="{this._getSideViewPosition(this.viewModel.sphereDiamter)}"
           foo="1"
-          bar=":)"
+          bar="':)'"
         />
         <Material>
           <StandardMaterial
@@ -43,6 +43,7 @@
           name="_menuRoot"
           position="0,1,-3"
           scaling="{this._menuScale}"
+          enabled="{this.viewModel.isMenuOpen}"
         >
           <ModelLoader
             url="{this.getModelUrl(this.viewModel.isConnected)}"
@@ -71,7 +72,11 @@
               <Material>
                 <StandardMaterial disableLighting="true" emissiveColor="#CA1359">
                   <EmissiveTexture>
-                    <UpdatableTexture url="{this.viewModel.picture}"/>
+                    <UpdatableTexture
+                      name="_pictureTexture"
+                      url="{this.viewModel.picture}"
+                      onLoad="{this._onPictureLoad}"
+                    />
                   </EmissiveTexture>
                 </StandardMaterial>
               </Material>
@@ -84,19 +89,20 @@
   <Materials>
     <StandardMaterial name="_acrylicMat" opacityTexture="_opacityTexture">
       <EmissiveTexture>
-        <UpdatableTexture url="assets/textures/acrylic_noise.png"/>
+        <UpdatableTexture url="assets/textures/acrylic_noise.png" noMipmap="true"/>
       </EmissiveTexture>
     </StandardMaterial>
   </Materials>
   <Textures>
-    <UpdatableTexture name="_opacityTexture" url="{this.viewModel.opacityUrl}"/>
+    <UpdatableTexture name="_opacityTexture" url="{ this.viewModel.opacityUrl }"/>
   </Textures>
   <Guis>
     <TextureGui
-      name="title"
+      name="_titleGui"
       mesh="_titlePlane"
       width="1200"
       height="1024"
+      alpha="0.9"
     >
       <Rectangle
         background="#FEFEFE"
@@ -114,7 +120,7 @@
             height="1"
             onPointerClick="{this._onOpenClicked}"
           >
-            <TextBlock text="'Open'"/>
+            <TextBlock text="Open"/>
           </Button>
           <Button
             paddingLeft="20px"

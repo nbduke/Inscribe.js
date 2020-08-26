@@ -57,7 +57,7 @@ export default class GuiTranslator {
     declareObject('AdvancedDynamicTexture', objectNames, false, this._class);
     const initMethod: MethodBuilder = this._class.getMethod(this._memberNames.init)!;
     initMethod.addToBody(
-      `this.${objectNames.privateName} = AdvancedDynamicTexture.CreateFullscreenUI(${objectNames.publicName}, undefined, this.${this._memberNames.scene});`
+      `this.${objectNames.privateName} = AdvancedDynamicTexture.CreateFullscreenUI('${objectNames.publicName}', undefined, this.${this._memberNames.scene});`
     );
 
     guiElement.attrs()
@@ -102,7 +102,7 @@ export default class GuiTranslator {
       .map(a => {
         return this._attributeTranslator.translate(a, objectNames.privateName, {
           doNotParsePrimitives: true,
-          propertyPathOverride: a.name() === 'alpha' ? `${meshName}.material!` : undefined
+          propertyPathOverride: a.name() === 'alpha' ? `${meshName}.material` : undefined
         });
       })
       .forEach(info => {
@@ -128,7 +128,7 @@ export default class GuiTranslator {
     declareObject(controlType, objectNames, initMethod.name !== this._memberNames.init, this._class);
 
     initMethod.addToBody(
-      `this.${objectNames.privateName} = new ${controlType}(${objectNames.publicName});`,
+      `this.${objectNames.privateName} = new ${controlType}('${objectNames.publicName}');`,
       `this.${parentName}.addControl(this.${objectNames.privateName});`
     );
 

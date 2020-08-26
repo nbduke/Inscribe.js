@@ -43,48 +43,47 @@ export default class NodeTranslator {
 
   public translate(nodesSection: Element): void {
     nodesSection.childNodes().forEach(nodeElement => {
-      this._translateRecursive(nodeElement, this._memberNames.root);
+      this._translateRecursive(nodeElement, this._memberNames.root, this._class.getMethod(this._memberNames.init)!);
     });
   }
 
-  private _translateRecursive(element: Element, parentName: string, deferredGroup?: string): void {
+  private _translateRecursive(element: Element, parentName: string, initMethod: MethodBuilder): void {
     const nodeType: string = element.name();
     switch (nodeType) {
       case 'TransformNode':
-        this._translateTransformNode(element, parentName, deferredGroup);
+        this._translateTransformNode(element, parentName, initMethod);
         break;
       case 'Sphere':
       case 'Box':
       case 'Cylinder':
       case 'Plane':
       case 'Disc':
-        this._translateShape(element, parentName, deferredGroup);
+        this._translateShape(element, parentName, initMethod);
         break;
       case 'ModelLoader':
-        this._translateModelLoader(element, parentName, deferredGroup);
+        this._translateModelLoader(element, parentName, initMethod);
         break;
       case 'Custom':
-        this._translateCustom(element, parentName, deferredGroup);
+        this._translateCustom(element, parentName, initMethod);
         break;
       case 'DeferredGroup':
         this._translateDeferredGroup(element, parentName);
         break;
       case 'Material':
-        this._translateMaterial(element, parentName, deferredGroup);
+        this._translateMaterial(element, parentName, initMethod);
         break;
     }
   }
 
-  private _translateTransformNode(element: Element, parentName: string, deferredGroup?: string): void {
+  private _translateTransformNode(element: Element, parentName: string, initMethod: MethodBuilder): void {
     const nodeType: string = element.name();
     this._importsTracker.babylon.add(nodeType);
     const objectNames: IObjectNames = getObjectNames(nodeType, element.attr('name')?.value());
-    declareObject(nodeType, objectNames, !!deferredGroup, this._class);
+    declareObject(nodeType, objectNames, initMethod.name !== this._memberNames.init, this._class);
 
-    const initMethod: MethodBuilder = this._class.getMethod(deferredGroup ?? this._memberNames.init)!;
     initMethod.addToBody(
       `this.${objectNames.privateName} = new ${nodeType}('${objectNames.publicName}', this.${this._memberNames.scene});`,
-      `this.${name}.parent = this.${parentName};`
+      `this.${objectNames.privateName}.parent = this.${parentName};`
     );
 
     element.attrs()
@@ -101,14 +100,14 @@ export default class NodeTranslator {
       }
     });
 
-    element.childNodes().forEach(child => this._translateRecursive(child, objectNames.privateName, deferredGroup));
+    element.childNodes().forEach(child => this._translateRecursive(child, objectNames.privateName, initMethod));
   }
 
-  private _translateShape(element: Element, parentName: string, deferredGroup?: string): void {
+  private _translateShape(element: Element, parentName: string, initMethod: MethodBuilder): void {
     const shapeType: string = element.name();
     this._importsTracker.inscribe.add(shapeType);
     const objectNames: IObjectNames = getObjectNames(shapeType, element.attr('name')?.value());
-    declareObject(shapeType, objectNames, !!deferredGroup, this._class);
+    declareObject(shapeType, objectNames, initMethod.name !== this._memberNames.init, this._class);
 
     const attributeInfos: IAttributeInfo[] = element.attrs()
       .filter(a => a.name() !== 'name')
@@ -124,14 +123,13 @@ export default class NodeTranslator {
       })
       .join(',' + lineDelim);
 
-    const initMethod: MethodBuilder = this._class.getMethod(deferredGroup ?? this._memberNames.init)!;
     initMethod.addToBody(
       `this.${objectNames.privateName} = new ${shapeType}(`,
       `  this.${this._memberNames.scene},`,
       `  '${objectNames.publicName}',`,
       `  {${propsObject}}`,
       ');',
-      `this.${name}.parent = this.${parentName};`
+      `this.${objectNames.privateName}.parent = this.${parentName};`
     );
 
     if (objectNames.isReferenceable) {
@@ -152,7 +150,7 @@ export default class NodeTranslator {
       }
     });
 
-    element.childNodes().forEach(child => this._translateRecursive(child, objectNames.privateName, deferredGroup));
+    element.childNodes().forEach(child => this._translateRecursive(child, objectNames.privateName, initMethod));
   }
 
   private _handleMaterialAttribute(nodeName: string, materialName: string, nodeInitMethod: MethodBuilder): void {
@@ -169,18 +167,16 @@ export default class NodeTranslator {
     );
   }
 
-  private _translateModelLoader(element: Element, parentName: string, deferredGroup?: string): void {
+  private _translateModelLoader(element: Element, parentName: string, initMethod: MethodBuilder): void {
     const nodeType: string = element.name();
     this._importsTracker.inscribe.add(nodeType);
     const objectNames: IObjectNames = getObjectNames(nodeType, element.attr('name')?.value());
-    declareObject(nodeType, objectNames, !!deferredGroup, this._class);
-
-    const initMethod: MethodBuilder = this._class.getMethod(deferredGroup ?? this._memberNames.init)!;
+    declareObject(nodeType, objectNames, initMethod.name !== this._memberNames.init, this._class);
 
     const url: string = this._attributeTranslator.extractExpression(element.attr('url')!, true);
     initMethod.addToBody(
       `this.${objectNames.privateName} = new ${nodeType}(this.${this._memberNames.scene}, '${objectNames.publicName}', ${url});`,
-      `this.${name}.parent = this.${parentName};`
+      `this.${objectNames.privateName}.parent = this.${parentName};`
     );
 
     element.attrs()
@@ -203,24 +199,23 @@ export default class NodeTranslator {
       }
     });
 
-    element.childNodes().forEach(child => this._translateRecursive(child, objectNames.privateName, deferredGroup));
+    element.childNodes().forEach(child => this._translateRecursive(child, objectNames.privateName, initMethod));
   }
 
-  private _translateCustom(element: Element, parentName: string, deferredGroup?: string): void {
+  private _translateCustom(element: Element, parentName: string, initMethod: MethodBuilder): void {
     const type: string = element.attr('type')!.value();
     const objectNames: IObjectNames = getObjectNames(type, element.attr('name')!.value());
-    declareObject(type, objectNames, !!deferredGroup, this._class);
+    declareObject(type, objectNames, initMethod.name !== this._memberNames.init, this._class);
 
     const attributeInfos: IAttributeInfo[] = element.attrs()
       .filter(a => !customNodeMetaProps.has(a.name()))
-      .map(a => this._attributeTranslator.translate(a, objectNames.privateName));
+      .map(a => this._attributeTranslator.translate(a, objectNames.privateName, { doNotParsePrimitives: true }));
     const propsObject: string = attributeInfos
       .map(info => {
-        return `${info.name}: ${info.value}`;
+        return `'${info.name}': ${info.value}`;
       })
       .join(',' + lineDelim);
 
-    const initMethod: MethodBuilder = this._class.getMethod(deferredGroup ?? this._memberNames.init)!;
     const factory: string = this._attributeTranslator.extractExpression(element.attr('factory')!);
     initMethod.addToBody(
       `this.${objectNames.privateName} = (${factory})({${propsObject}}, this.${parentName});`
@@ -238,7 +233,7 @@ export default class NodeTranslator {
 
     const attachChildrenTo: string | undefined = element.attr('attachChildrenTo')?.value();
     const parentSetter: string = objectNames.privateName + (attachChildrenTo ? `.${attachChildrenTo}` : '');
-    element.childNodes().forEach(child => this._translateRecursive(child, parentSetter, deferredGroup));
+    element.childNodes().forEach(child => this._translateRecursive(child, parentSetter, initMethod));
   }
 
   private _translateDeferredGroup(element: Element, parentName: string): void {
@@ -262,7 +257,7 @@ export default class NodeTranslator {
       );
     }
 
-    element.childNodes().forEach(child => this._translateRecursive(child, parentName, name));
+    element.childNodes().forEach(child => this._translateRecursive(child, parentName, initMethod));
 
     const onInit: Attribute | null = element.attr('onInit');
     if (onInit) {
@@ -271,7 +266,7 @@ export default class NodeTranslator {
     }
   }
 
-  private _translateMaterial(element: Element, parentName: string, deferredGroup?: string): void {
+  private _translateMaterial(element: Element, parentName: string, initMethod: MethodBuilder): void {
     if ((element.parent() as Element).attr('material')) {
       throw new Error(`Conflicting material assignments on node ${parentName.slice(2)}.`);
     }
@@ -282,6 +277,6 @@ export default class NodeTranslator {
       this._referenceableObjects,
       this._memberNames
     );
-    materialTranslator.translateNodeMaterial(element.child(0)!, parentName, deferredGroup);
+    materialTranslator.translateNodeMaterial(element.child(0)!, parentName, initMethod);
   }
 }

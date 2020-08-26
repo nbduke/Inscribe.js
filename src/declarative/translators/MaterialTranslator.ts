@@ -5,7 +5,7 @@ import MethodBuilder from '../builders/MethodBuilder';
 import { IMemberNames, IImportsTracker, IReferenceableObjects } from './DocumentTranslator';
 import { IObjectNames, getObjectNames, declareObject } from './ObjectNames';
 import AttributeTranslator from './AttributeTranslator';
-import TextureTranslator from './TextureTranslator';
+import TextureTranslator, { IMaterialInfo } from './TextureTranslator';
 
 const textureSlots: Map<string, Set<string>> = new Map([
   ['StandardMaterial', new Set([
@@ -64,22 +64,19 @@ export default class MaterialTranslator {
     }
   }
 
-  public translateNodeMaterial(materialElement: Element, nodeName: string, deferredGroup?: string): void {
+  public translateNodeMaterial(materialElement: Element, nodeName: string, initMethod: MethodBuilder): void {
     const materialType: string = materialElement.name();
     const name: string | undefined = materialElement.attr('name')?.value();
     const objectNames: IObjectNames = getObjectNames(materialType, name);
-    declareObject(materialType, objectNames, !!deferredGroup, this._class);
-
-    const initMethod: MethodBuilder = this._class.getMethod(deferredGroup ?? this._memberNames.init)!;
-    this._translateMaterial(materialElement, objectNames, initMethod, nodeName, deferredGroup);
+    declareObject(materialType, objectNames, initMethod.name !== this._memberNames.init, this._class);
+    this._translateMaterial(materialElement, objectNames, initMethod, nodeName);
   }
 
   private _translateMaterial(
     materialElement: Element,
     objectNames: IObjectNames,
     initMethod: MethodBuilder,
-    nodeName?: string,
-    deferredGroup?: string
+    nodeName?: string
   ): void {
     const materialType: string = materialElement.name();
     this._importsTracker.babylon.add(materialType);
@@ -96,7 +93,11 @@ export default class MaterialTranslator {
       .map(a => this._attributeTranslator.translate(a, objectNames.privateName))
       .forEach(info => {
         if (materialTextureSlots.has(info.name)) {
-          this._handleTextureAttribute(objectNames.privateName, info.name, info.value, initMethod);
+          this._handleTextureAttribute(info.value, {
+            name: objectNames.privateName,
+            textureSlot: info.name,
+            initMethod
+          });
         } else {
           initMethod.addToBody(info.propertySetter);
           if (info.addBinding) {
@@ -106,16 +107,11 @@ export default class MaterialTranslator {
       });
 
     materialElement.childNodes().forEach(textureSlotElement => {
-      this._translateTexture(textureSlotElement, objectNames.privateName, deferredGroup);
+      this._translateTexture(textureSlotElement, objectNames.privateName, initMethod);
     });
   }
 
-  private  _handleTextureAttribute(
-    materialName: string,
-    textureSlot: string,
-    textureName: string,
-    materialInitMethod: MethodBuilder
-  ): void {
+  private  _handleTextureAttribute(textureName: string, materialInfo: IMaterialInfo): void {
     if (!this._referenceableObjects.textures.has(textureName)) {
       throw new Error(`Texture reference not found: ${textureName}`);
     }
@@ -124,16 +120,20 @@ export default class MaterialTranslator {
     this._class.addMethod(ensureMethod);
     this._referenceableObjects.textures.set(textureName, ensureMethod); // replace init method with ensure method
     this._importsTracker.babylon.add('Texture');
-    materialInitMethod.addToBody(
-      `this.${materialName}.${textureSlot} = this.${ensureMethodName}();`
+    materialInfo.initMethod.addToBody(
+      `this.${materialInfo.name}.${materialInfo.textureSlot} = this.${ensureMethodName}();`
     );
   }
 
-  private _translateTexture(textureSlotElement: Element, parentName: string, deferredGroup?: string): void {
+  private _translateTexture(
+    textureSlotElement: Element,
+    materialName: string,
+    materialInitMethod: MethodBuilder
+  ): void {
     let textureSlot: string = textureSlotElement.name();
     textureSlot = textureSlot[0].toLowerCase() + textureSlot.slice(1);
     if ((textureSlotElement.parent() as Element).attr(textureSlot)) {
-      throw new Error(`Conflicting texture assignments on material ${parentName.slice(2)}.${textureSlot}.`);
+      throw new Error(`Conflicting texture assignments on material ${materialName.slice(2)}.${textureSlot}.`);
     }
 
     const textureTranslator: TextureTranslator = new TextureTranslator(
@@ -144,8 +144,7 @@ export default class MaterialTranslator {
     );
     textureTranslator.translateMaterialTexture(
       textureSlotElement.child(0)!,
-      { name: parentName, textureSlot },
-      deferredGroup
+      { name: materialName, textureSlot, initMethod: materialInitMethod }
     );
   }
 }
