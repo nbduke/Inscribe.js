@@ -49,7 +49,7 @@ export default class AttributeTranslator {
         return {
           name,
           value: parsedObject,
-          propertySetter: `this.${options?.propertyPathOverride ?? privateName}.${name} = ${parsedObject};`
+          propertySetter: `this.${options?.propertyPathOverride ?? privateName}!.${name} = ${parsedObject};`
         };
       }
     }
@@ -61,8 +61,8 @@ export default class AttributeTranslator {
 
     const propertyPath: string = `this.${options?.propertyPathOverride ?? privateName}`;
     const propertySetter: string = options?.updateMethod
-      ? `${propertyPath}.${options.updateMethod}(${value});`
-      : `${propertyPath}.${name} = ${value};`;
+      ? `${propertyPath}!.${options.updateMethod}(${value});`
+      : `${propertyPath}!.${name} = ${value};`;
 
     return {
       name,
@@ -101,7 +101,7 @@ export default class AttributeTranslator {
   }
 
   private _cleanExpression(expression: string): string {
-    return expression.trim().replace('this.', `this.${this._memberNames.host}.`);
+    return expression.trim().replace(/this\./g, `this.${this._memberNames.host}.`);
   }
 
   private _handleExpression(
@@ -115,15 +115,15 @@ export default class AttributeTranslator {
     let addBinding: string | undefined = undefined;
 
     if (options?.isEvent) {
-      propertySetter = `${propertyPath}.${attributeName}.subscribe(${expression});`;
+      propertySetter = `${propertyPath}!.${attributeName}.subscribe(${expression});`;
     } else if (options?.isObservable) {
-      propertySetter = `${propertyPath}.${attributeName}Observable.add(${expression});`;
+      propertySetter = `${propertyPath}!.${attributeName}Observable.add(${expression});`;
     } else if (options?.updateMethod) {
-      const propertySetterTemplate: string = `${propertyPath}.${options.updateMethod}(@value);`;
+      const propertySetterTemplate: string = `${propertyPath}!.${options.updateMethod}(@value);`;
       propertySetter = propertySetterTemplate.replace('@value', expression);
       addBinding = !options?.doNotBind ? this._getAddBinding(expression, propertySetterTemplate) : undefined;
     } else {
-      const propertySetterTemplate: string = `${propertyPath}.${attributeName} = @value;`;
+      const propertySetterTemplate: string = `${propertyPath}!.${attributeName} = @value;`;
       propertySetter = propertySetterTemplate.replace('@value', expression);
       addBinding = !options?.doNotBind ? this._getAddBinding(expression, propertySetterTemplate) : undefined;
     }

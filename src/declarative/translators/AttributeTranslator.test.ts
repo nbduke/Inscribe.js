@@ -7,7 +7,8 @@ import { IObjectNames } from './ObjectNames';
 describe('AttributeTranslator', () => {
   const importsTracker: IImportsTracker = {
     babylon: new Set(),
-    inscribe: new Set()
+    inscribe: new Set(),
+    lodash: new Set()
   };
   const memberNames: IMemberNames = {
     root: 'rooooot',
@@ -35,7 +36,7 @@ describe('AttributeTranslator', () => {
       const attribute: Attribute = createAttribute('primitiveBoolean', 'true');
       const info: IAttributeInfo = createUnit().translate(attribute, objectName);
 
-      const expectedPropSetter: string = `this.${objectName}.primitiveBoolean = true;`;
+      const expectedPropSetter: string = `this.${objectName}!.primitiveBoolean = true;`;
       expect(info).toEqual({
         name: 'primitiveBoolean',
         value: 'true',
@@ -49,7 +50,7 @@ describe('AttributeTranslator', () => {
       const info: IAttributeInfo = createUnit().translate(attribute, objectName);
 
       const expectedValue: string = `new Vector3(0.4,10,-3)`;
-      const expectedPropSetter: string = `this.${objectName}.position = ${expectedValue};`;
+      const expectedPropSetter: string = `this.${objectName}!.position = ${expectedValue};`;
       expect(info).toEqual({
         name: 'position',
         value: expectedValue,
@@ -63,7 +64,7 @@ describe('AttributeTranslator', () => {
       const info: IAttributeInfo = createUnit().translate(attribute, objectName);
 
       const expectedValue: string = `new Color3(0.4,0.0125,0.85)`;
-      const expectedPropSetter: string = `this.${objectName}.background = ${expectedValue};`;
+      const expectedPropSetter: string = `this.${objectName}!.background = ${expectedValue};`;
       expect(info).toEqual({
         name: 'background',
         value: expectedValue,
@@ -77,7 +78,7 @@ describe('AttributeTranslator', () => {
       const info: IAttributeInfo = createUnit().translate(attribute, objectName);
 
       const expectedValue: string = `Color3.FromHexString('#AF103D')`;
-      const expectedPropSetter: string = `this.${objectName}.background = ${expectedValue};`;
+      const expectedPropSetter: string = `this.${objectName}!.background = ${expectedValue};`;
       expect(info).toEqual({
         name: 'background',
         value: expectedValue,
@@ -91,7 +92,7 @@ describe('AttributeTranslator', () => {
       const info: IAttributeInfo = createUnit().translate(attribute, objectName);
 
       const expectedValue: string = `new Color4(0,0.0125,0.85,1)`;
-      const expectedPropSetter: string = `this.${objectName}.borderColor = ${expectedValue};`;
+      const expectedPropSetter: string = `this.${objectName}!.borderColor = ${expectedValue};`;
       expect(info).toEqual({
         name: 'borderColor',
         value: expectedValue,
@@ -105,7 +106,7 @@ describe('AttributeTranslator', () => {
       const info: IAttributeInfo = createUnit().translate(attribute, objectName);
 
       const expectedValue: string = `Color4.FromHexString('#32AD80FF')`;
-      const expectedPropSetter: string = `this.${objectName}.borderColor = ${expectedValue};`;
+      const expectedPropSetter: string = `this.${objectName}!.borderColor = ${expectedValue};`;
       expect(info).toEqual({
         name: 'borderColor',
         value: expectedValue,
@@ -124,7 +125,7 @@ describe('AttributeTranslator', () => {
       const attribute: Attribute = createAttribute('background', '#32AD80FF');
       const info: IAttributeInfo = createUnit().translate(attribute, objectName, { doNotParsePrimitives: true });
 
-      const expectedPropSetter: string = `this.${objectName}.background = #32AD80FF;`;
+      const expectedPropSetter: string = `this.${objectName}!.background = #32AD80FF;`;
       expect(info).toEqual({
         name: 'background',
         value: '#32AD80FF',
@@ -138,7 +139,7 @@ describe('AttributeTranslator', () => {
       const info: IAttributeInfo = createUnit().translate(attribute, objectName, { useQuotesIfNeeded: true });
 
       const expectedValue: string = `'100px'`;
-      const expectedPropSetter: string = `this.${objectName}.height = ${expectedValue};`;
+      const expectedPropSetter: string = `this.${objectName}!.height = ${expectedValue};`;
       expect(info).toEqual({
         name: 'height',
         value: expectedValue,
@@ -151,7 +152,7 @@ describe('AttributeTranslator', () => {
       const attribute: Attribute = createAttribute('enabled', 'false');
       const info: IAttributeInfo = createUnit().translate(attribute, objectName, { updateMethod: 'setEnabled' });
 
-      const expectedPropSetter: string = `this.${objectName}.setEnabled(false);`;
+      const expectedPropSetter: string = `this.${objectName}!.setEnabled(false);`;
       expect(info).toEqual({
         name: 'enabled',
         value: 'false',
@@ -165,7 +166,7 @@ describe('AttributeTranslator', () => {
       const info: IAttributeInfo = createUnit().translate(attribute, objectName, { updateMethod: 'enableIt' });
 
       const expectedValue: string = 'Constants.SHOULD_ENABLE';
-      const expectedPropSetter: string = `this.${objectName}.enableIt(${expectedValue});`;
+      const expectedPropSetter: string = `this.${objectName}!.enableIt(${expectedValue});`;
       expect(info).toEqual({
         name: 'enabled',
         value: expectedValue,
@@ -179,8 +180,8 @@ describe('AttributeTranslator', () => {
       const info: IAttributeInfo = createUnit().translate(attribute, objectName, { updateMethod: 'setIsOpen' });
 
       const expectedValue: string = `this.${memberNames.host}.viewModel.isShown`;
-      const expectedPropSetter: string = `this.${objectName}.setIsOpen(${expectedValue});`;
-      const expectedAddBinding: string = `this.${memberNames.addBinding}('${expectedValue}', (value) => { this.${objectName}.setIsOpen(value); });`;
+      const expectedPropSetter: string = `this.${objectName}!.setIsOpen(${expectedValue});`;
+      const expectedAddBinding: string = `this.${memberNames.addBinding}('${expectedValue}', (value) => { this.${objectName}!.setIsOpen(value); });`;
       expect(info).toEqual({
         name: 'isOpen',
         value: expectedValue,
@@ -194,7 +195,7 @@ describe('AttributeTranslator', () => {
       const info: IAttributeInfo = createUnit().translate(attribute, objectName, { isEvent: true });
 
       const expectedValue: string = `this.${memberNames.host}._onLoadFailed`;
-      const expectedPropSetter: string = `this.${objectName}.loadFailed.subscribe(${expectedValue});`;
+      const expectedPropSetter: string = `this.${objectName}!.loadFailed.subscribe(${expectedValue});`;
       expect(info).toEqual({
         name: 'loadFailed',
         value: expectedValue,
@@ -208,7 +209,7 @@ describe('AttributeTranslator', () => {
       const info: IAttributeInfo = createUnit().translate(attribute, objectName, { isObservable: true });
 
       const expectedValue: string = `() => this.${memberNames.host}._display()`;
-      const expectedPropSetter: string = `this.${objectName}.onImageLoadedObservable.add(${expectedValue});`;
+      const expectedPropSetter: string = `this.${objectName}!.onImageLoadedObservable.add(${expectedValue});`;
       expect(info).toEqual({
         name: 'onImageLoaded',
         value: expectedValue,
@@ -221,7 +222,7 @@ describe('AttributeTranslator', () => {
       const attribute: Attribute = createAttribute('fizz', 'buzz');
       const info: IAttributeInfo = createUnit().translate(attribute, objectName, { propertyPathOverride: 'x_bar.a.b.c' });
 
-      const expectedPropSetter: string = `this.x_bar.a.b.c.fizz = buzz;`;
+      const expectedPropSetter: string = `this.x_bar.a.b.c!.fizz = buzz;`;
       expect(info).toEqual({
         name: 'fizz',
         value: 'buzz',
@@ -236,7 +237,7 @@ describe('AttributeTranslator', () => {
     const info: IAttributeInfo = createUnit().translate(attribute, objectName, { doNotBind: true });
 
     const expectedValue: string = `this.${memberNames.host}.viewModel.opacity`;
-    const expectedPropSetter: string = `this.${objectName}.alpha = ${expectedValue};`;
+    const expectedPropSetter: string = `this.${objectName}!.alpha = ${expectedValue};`;
     expect(info).toEqual({
       name: 'alpha',
       value: expectedValue,

@@ -11,3 +11,15 @@ export function readFile(path: string): Promise<string> {
     });
   });
 }
+
+export function writeFile(path: string, contents: string, flag: string = 'w+'): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    fs.writeFile(path, contents, { flag }, error => {
+      if (error) {
+        reject(error);
+      } else {
+        resolve();
+      }
+    });
+  });
+}

@@ -8,6 +8,7 @@ import AttributeTranslator from './AttributeTranslator';
 
 export default class PropertyTranslator {
   private readonly _class: ClassBuilder;
+  private readonly _importsTracker: IImportsTracker;
   private readonly _memberNames: IMemberNames;
   private readonly _attributeTranslator: AttributeTranslator;
 
@@ -17,6 +18,7 @@ export default class PropertyTranslator {
     memberNames: IMemberNames
   ) {
     this._class = classBuilder;
+    this._importsTracker = importsTracker;
     this._memberNames = memberNames;
     this._attributeTranslator = new AttributeTranslator(importsTracker, memberNames);
   }
@@ -36,17 +38,18 @@ export default class PropertyTranslator {
         );
       }
 
-      const propertyBuilder: PropertyBuilder = new PropertyBuilder(objectNames.publicName, type, 'protected');
+      const propertyBuilder: PropertyBuilder = new PropertyBuilder(objectNames.publicName, type, 'public');
       propertyBuilder.addToGetterBody(
         `return this.${objectNames.privateName};`
       );
       propertyBuilder.addToSetterBody(
-        `if (!equals(this.${objectNames.privateName}, value)) {`,
+        `if (!isEqual(this.${objectNames.privateName}, value)) {`,
         `  this.${objectNames.privateName} = value;`,
-        `  this.${this._memberNames.propertyChanged}.raise(${objectNames.publicName}, value);`,
+        `  this.${this._memberNames.host}.${this._memberNames.propertyChanged}.raise({ propertyName: '${objectNames.publicName}', value });`,
         `}`
       );
       this._class.addProperty(propertyBuilder);
+      this._importsTracker.lodash.add('isEqual');
     });
   }
 }
