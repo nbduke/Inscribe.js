@@ -1,4 +1,4 @@
-import { Mesh, Scene, VertexData } from 'babylonjs';
+import { Mesh, Scene, VertexData } from '@babylonjs/core';
 import { isEqual, assign, cloneDeep } from 'lodash';
 
 export default class Shape<TProps> extends Mesh {

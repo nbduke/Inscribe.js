@@ -1,4 +1,4 @@
-import { Scene, VertexData } from 'babylonjs';
+import { Scene, VertexData } from '@babylonjs/core';
 
 import Shape from './Shape';
 

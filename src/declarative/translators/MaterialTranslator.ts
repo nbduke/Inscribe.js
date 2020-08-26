@@ -79,7 +79,7 @@ export default class MaterialTranslator {
     nodeName?: string
   ): void {
     const materialType: string = materialElement.name();
-    this._importsTracker.babylon.add(materialType);
+    this._importsTracker.babylonCore.add(materialType);
     initMethod.addToBody(
       `this.${objectNames.privateName} = new ${materialType}('${objectNames.publicName}', this.${this._memberNames.scene});`
     );
@@ -119,7 +119,7 @@ export default class MaterialTranslator {
     const ensureMethod: MethodBuilder = new MethodBuilder(ensureMethodName, 'Texture', 'private');
     this._class.addMethod(ensureMethod);
     this._referenceableObjects.textures.set(textureName, ensureMethod); // replace init method with ensure method
-    this._importsTracker.babylon.add('Texture');
+    this._importsTracker.babylonCore.add('Texture');
     materialInfo.initMethod.addToBody(
       `this.${materialInfo.name}.${materialInfo.textureSlot} = this.${ensureMethodName}();`
     );

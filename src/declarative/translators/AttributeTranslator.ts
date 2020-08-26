@@ -151,7 +151,7 @@ export default class AttributeTranslator {
   }
 
   private _parseObject(type: string, value: string): string {
-    this._importsTracker.babylon.add(type);
+    this._importsTracker.babylonCore.add(type);
     if (type.startsWith('Color') && value.startsWith('#')) {
       return `${type}.FromHexString('${value}')`;
     } else {

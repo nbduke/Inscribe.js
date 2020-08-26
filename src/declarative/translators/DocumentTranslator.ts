@@ -19,7 +19,8 @@ export interface IMemberNames {
 }
 
 export interface IImportsTracker {
-  babylon: Set<string>;
+  babylonCore: Set<string>;
+  babylonGui: Set<string>;
   inscribe: Set<string>;
   lodash: Set<string>;
 }
@@ -28,6 +29,14 @@ export interface IReferenceableObjects {
   materials: Map<string, MethodBuilder>;
   textures: Map<string, MethodBuilder>;
   nodes: Map<string, MethodBuilder>;
+}
+
+export interface IImportLibs {
+  allBabylon?: string;
+  babylonCore?: string;
+  babylonGui?: string;
+  inscribe?: string;
+  lodash?: string;
 }
 
 export default class DocumentTranslator {
@@ -40,16 +49,14 @@ export default class DocumentTranslator {
     bindingEngine: '_bindingEngine',
     addBinding: '_bindingEngine.addBinding'
   };
-  private readonly _babylonLib: string;
-  private readonly _inscribeLib: string;
+  private readonly _importLibs?: IImportLibs;
   private _class!: ClassBuilder;
   private _explicitImports!: string[];
   private _implicitImports!: IImportsTracker;
   private _referenceableObjects!: IReferenceableObjects;
 
-  constructor(babylonLib: string, inscribeLib: string) {
-    this._babylonLib = babylonLib;
-    this._inscribeLib = inscribeLib;
+  constructor(importLibs?: IImportLibs) {
+    this._importLibs = importLibs;
   }
 
   public translate(document: Document): string {
@@ -58,7 +65,8 @@ export default class DocumentTranslator {
     this._class = new ClassBuilder(className, 'export default');
     this._explicitImports = [];
     this._implicitImports = {
-      babylon: new Set(['Node', 'Scene']),
+      babylonCore: new Set(['Node', 'Scene']),
+      babylonGui: new Set(),
       inscribe: new Set(['BindingEngine', 'Event']),
       lodash: new Set()
     };
@@ -103,9 +111,9 @@ export default class DocumentTranslator {
       `}`,
       `this.${this._memberNames.host} = scriptProvider;`,
       `this.${this._memberNames.bindingEngine} = new BindingEngine(this);`,
-      `if (!scriptProvider.${this._memberNames.propertyChanged}) {
-        scriptProvider.${this._memberNames.propertyChanged} = new Event();
-      }`
+      `if (!scriptProvider.${this._memberNames.propertyChanged}) {`,
+      `  scriptProvider.${this._memberNames.propertyChanged} = new Event();`,
+      `}`
     );
     this._class.addMethod(initMethod);
   }
@@ -200,12 +208,23 @@ export default class DocumentTranslator {
   }
 
   private _compileImports(): string {
-    const babylonTypes: string[] = Array.from(this._implicitImports.babylon).sort();
-    const babylonImports: string = `import { ${babylonTypes.join(',' + lineDelim)} } from '${this._babylonLib}';`;
+    let babylonImports: string;
+    if (this._importLibs?.allBabylon) {
+      const babylonTypes: string[] = Array.from(this._implicitImports.babylonCore)
+        .concat(Array.from(this._implicitImports.babylonGui))
+        .sort();
+      babylonImports = `import { ${babylonTypes.join(',' + lineDelim)} } from '${this._importLibs.allBabylon}';`;
+    } else {
+      const babylonCoreTypes: string[] = Array.from(this._implicitImports.babylonCore).sort();
+      const babylonGuiTypes: string[] = Array.from(this._implicitImports.babylonGui).sort();
+      babylonImports = `import { ${babylonCoreTypes.join(',' + lineDelim)} } from '${this._importLibs?.babylonCore ?? '@babylonjs/core'}';`;
+      babylonImports += lineDelim + `import { ${babylonGuiTypes.join(',' + lineDelim)} } from '${this._importLibs?.babylonGui ?? '@babylonjs/gui'}';`;
+    }
+
     const inscribeTypes: string[] = Array.from(this._implicitImports.inscribe).sort();
-    const inscribeImports: string = `import { ${inscribeTypes.join(',' + lineDelim)} } from '${this._inscribeLib}';`;
+    const inscribeImports: string = `import { ${inscribeTypes.join(',' + lineDelim)} } from '${this._importLibs?.inscribe ?? 'inscribe'}';`;
     const lodashTypes: string[] = Array.from(this._implicitImports.lodash).sort();
-    const lodashImports: string = `import { ${lodashTypes.join(',' + lineDelim)} } from 'lodash';`;
+    const lodashImports: string = `import { ${lodashTypes.join(',' + lineDelim)} } from '${this._importLibs?.lodash ?? 'lodash'}';`;
 
     return [...this._explicitImports, babylonImports, inscribeImports, lodashImports].join(lineDelim);
   }
