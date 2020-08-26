@@ -6,7 +6,8 @@ import { IObjectNames } from './ObjectNames';
 
 describe('AttributeTranslator', () => {
   const importsTracker: IImportsTracker = {
-    babylon: new Set(),
+    babylonCore: new Set(),
+    babylonGui: new Set(),
     inscribe: new Set(),
     lodash: new Set()
   };
@@ -118,7 +119,7 @@ describe('AttributeTranslator', () => {
     it('adds Babylon import if object is parsed', () => {
       const attribute: Attribute = createAttribute('background', '#AF103D');
       createUnit().translate(attribute, objectName);
-      expect(importsTracker.babylon).toContain('Color3');
+      expect(importsTracker.babylonCore).toContain('Color3');
     });
 
     it('will not parse primitive if doNotParsePrimitives option is set', () => {
@@ -279,7 +280,7 @@ describe('AttributeTranslator', () => {
 
     it('adds Babylon import if object is parsed', () => {
       createUnit().extractExpressionFromTypeAndValue('Color4', '0,0.23,0.59,1');
-      expect(importsTracker.babylon).toContain('Color4');
+      expect(importsTracker.babylonCore).toContain('Color4');
     });
 
     it('surrounds the value in quotes if not an expression and type is string', () => {

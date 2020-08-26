@@ -2,7 +2,7 @@ import {
   Observable,
   Scene,
   Texture
-} from 'babylonjs';
+} from '@babylonjs/core';
 
 /**
  * Improves Babylon's `Texture` class with consistent loading, loaded, and error observables

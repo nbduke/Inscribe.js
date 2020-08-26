@@ -41,8 +41,8 @@ export default class GuiTranslator {
   }
 
   public translate(guisSection: Element): void {
-    this._importsTracker.babylon.add('AdvancedDynamicTexture');
-    this._importsTracker.babylon.add('Control');
+    this._importsTracker.babylonGui.add('AdvancedDynamicTexture');
+    this._importsTracker.babylonGui.add('Control');
     guisSection.childNodes().forEach(guiElement => {
       if (guiElement.name() === 'FullScreen') {
         this._translateFullScreenGui(guiElement);
@@ -123,7 +123,7 @@ export default class GuiTranslator {
     initMethod: MethodBuilder
   ): void {
     const controlType: string = controlElement.name();
-    this._importsTracker.babylon.add(controlType);
+    this._importsTracker.babylonGui.add(controlType);
     const objectNames: IObjectNames = getObjectNames(controlType, controlElement.attr('name')?.value());
     declareObject(controlType, objectNames, initMethod.name !== this._memberNames.init, this._class);
 

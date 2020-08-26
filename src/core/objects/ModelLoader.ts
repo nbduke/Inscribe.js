@@ -5,7 +5,7 @@ import {
   SceneLoaderProgressEvent,
   TransformNode,
   Vector3
-} from 'babylonjs';
+} from '@babylonjs/core';
 
 import Event, { IEvent } from '../events/Event';
 

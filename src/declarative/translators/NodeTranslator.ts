@@ -77,7 +77,7 @@ export default class NodeTranslator {
 
   private _translateTransformNode(element: Element, parentName: string, initMethod: MethodBuilder): void {
     const nodeType: string = element.name();
-    this._importsTracker.babylon.add(nodeType);
+    this._importsTracker.babylonCore.add(nodeType);
     const objectNames: IObjectNames = getObjectNames(nodeType, element.attr('name')?.value());
     declareObject(nodeType, objectNames, initMethod.name !== this._memberNames.init, this._class);
 
@@ -161,7 +161,7 @@ export default class NodeTranslator {
     const ensureMethod: MethodBuilder = new MethodBuilder(ensureMethodName, 'Material', 'private');
     this._class.addMethod(ensureMethod);
     this._referenceableObjects.materials.set(materialName, ensureMethod); // replace init method with ensure method
-    this._importsTracker.babylon.add('Material');
+    this._importsTracker.babylonCore.add('Material');
     nodeInitMethod.addToBody(
       `this.${nodeName}.material = this.${ensureMethodName}();`
     );

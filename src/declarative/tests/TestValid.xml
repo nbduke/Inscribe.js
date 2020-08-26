@@ -144,7 +144,7 @@
           text="{this.viewModel.pageHeaderText}"
           horizontalAlignment="{Control.HORIZONTAL_ALIGNMENT_CENTER}"
           fontSize="125px"
-          fontWeight="100"
+          fontWeight="100px"
         />
       </Ellipse>
     </FullScreen>

@@ -1,4 +1,4 @@
-import { AbstractMesh, Ray, StickValues, Vector3 } from 'babylonjs';
+import { AbstractMesh, Ray, StickValues, Vector3 } from '@babylonjs/core';
 
 import {
   InputEvent,
