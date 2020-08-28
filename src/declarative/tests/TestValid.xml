@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<View name="Valid">
+<View
+  name="Valid"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation="../../../View.xsd"
+>
   <Imports>
     import Constants from '../Constants';
     import { Foo as _Foo } from '@bar';

@@ -1,7 +1,7 @@
 import { Document, Element } from 'libxmljs';
 
 import ClassBuilder, { lineDelim } from '../builders/ClassBuilder';
-import MethodBuilder from '../builders/MethodBuilder';
+import MethodBuilder, { IMethodArgument } from '../builders/MethodBuilder';
 import PropertyTranslator from './PropertyTranslator';
 import NodeTranslator from './NodeTranslator';
 import MaterialTranslator from './MaterialTranslator';
@@ -62,6 +62,7 @@ export default class DocumentTranslator {
   public translate(document: Document): string {
     const root: Element = document.root()!;
     const className: string = root.attr('name')!.value();
+    const isMixin: boolean = root.attr('isMixin')?.value() === 'true';
     this._class = new ClassBuilder(className, 'export default');
     this._explicitImports = [];
     this._implicitImports = {
@@ -76,7 +77,7 @@ export default class DocumentTranslator {
       nodes: new Map()
     };
 
-    this._setupVariablesAndMethods();
+    this._setupVariablesAndMethods(isMixin);
     this._getSharedMaterialsAndTextures(root);
     root.childNodes().forEach(section => this._translateSection(section));
 
@@ -85,18 +86,19 @@ export default class DocumentTranslator {
     return importLines + lineDelim + classOutput;
   }
 
-  private _setupVariablesAndMethods() {
+  private _setupVariablesAndMethods(isMixin: boolean) {
     this._class.addMemberVariable(this._memberNames.root, 'Node | null', 'private', 'null');
     this._class.addMemberVariable(this._memberNames.scene, 'Scene', 'private', undefined, '!');
     this._class.addMemberVariable(this._memberNames.host, 'any', 'private', undefined, '!');
     this._class.addMemberVariable(this._memberNames.bindingEngine, 'BindingEngine', 'private', undefined, '!');
     this._class.addMemberVariable('_isInitialized', 'boolean', 'private', 'false');
 
+    const rootArgument: IMethodArgument = { name: 'root', type: 'Node | Scene' };
     const initMethod: MethodBuilder = new MethodBuilder(
       this._memberNames.init,
       'void',
       'protected',
-      { name: 'root', type: 'Node | Scene' },
+      rootArgument,
       { name: 'scriptProvider', type: 'any' }
     );
     initMethod.addToBody(
@@ -116,6 +118,11 @@ export default class DocumentTranslator {
       `}`
     );
     this._class.addMethod(initMethod);
+
+    if (!isMixin) {
+      this._class.setConstructorArgs(rootArgument);
+      this._class.addToConstructorBody(`this.__init(root, this);`);
+    }
   }
 
   private _getSharedMaterialsAndTextures(root: Element): void {
@@ -222,7 +229,7 @@ export default class DocumentTranslator {
     }
 
     const inscribeTypes: string[] = Array.from(this._implicitImports.inscribe).sort();
-    const inscribeImports: string = `import { ${inscribeTypes.join(',' + lineDelim)} } from '${this._importLibs?.inscribe ?? 'inscribe'}';`;
+    const inscribeImports: string = `import { ${inscribeTypes.join(',' + lineDelim)} } from '${this._importLibs?.inscribe ?? 'inscribejs'}';`;
     const lodashTypes: string[] = Array.from(this._implicitImports.lodash).sort();
     const lodashImports: string = `import { ${lodashTypes.join(',' + lineDelim)} } from '${this._importLibs?.lodash ?? 'lodash'}';`;
 

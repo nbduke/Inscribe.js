@@ -5,15 +5,12 @@
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "bin": {
-    "inscribe": "./bin/inscribe"
+    "inscribe": "./lib/declarative/inscribe.js"
   },
   "scripts": {
     "start": "tsc",
     "test": "jest"
   },
-  "files": [
-    "src/declarative/View.xsd"
-  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/nbduke/Inscribe.js.git"
