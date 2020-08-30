@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<View name="Invalid">
+<View
+  name="Valid"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation="../../../View.xsd"
+>
   <Nodes>
     <ModelLoader name="_model" url="'thing.obj'" loaded="{this._onLoaded"> <!-- 1st and 2nd error -->
       <Plane name="_guiPlane" position.z="-0.25" enabled="{this._showGui}"/>

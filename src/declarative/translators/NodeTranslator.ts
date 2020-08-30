@@ -204,7 +204,7 @@ export default class NodeTranslator {
 
   private _translateCustom(element: Element, parentName: string, initMethod: MethodBuilder): void {
     const type: string = element.attr('type')!.value();
-    const objectNames: IObjectNames = getObjectNames(type, element.attr('name')!.value());
+    const objectNames: IObjectNames = getObjectNames(type, element.attr('name')?.value());
     declareObject(type, objectNames, initMethod.name !== this._memberNames.init, this._class);
 
     const attributeInfos: IAttributeInfo[] = element.attrs()
