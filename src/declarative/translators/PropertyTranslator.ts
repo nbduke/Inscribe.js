@@ -45,7 +45,7 @@ export default class PropertyTranslator {
       propertyBuilder.addToSetterBody(
         `if (!isEqual(this.${objectNames.privateName}, value)) {`,
         `  this.${objectNames.privateName} = value;`,
-        `  this.${this._memberNames.host}.${this._memberNames.propertyChanged}.raise({ propertyName: '${objectNames.publicName}', value });`,
+        `  ${this._memberNames.thisAttr}.${this._memberNames.propertyChanged}.raise({ propertyName: '${objectNames.publicName}', value });`,
         `}`
       );
       this._class.addProperty(propertyBuilder);

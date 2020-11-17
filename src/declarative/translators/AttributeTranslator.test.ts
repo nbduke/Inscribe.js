@@ -13,9 +13,9 @@ describe('AttributeTranslator', () => {
   };
   const memberNames: IMemberNames = {
     root: 'rooooot',
-    host: 'HOST',
     init: 'initialize',
     scene: 'sc3n3',
+    thisAttr: 'this._a',
     propertyChanged: 'propchgd',
     bindingEngine: 'be',
     addBinding: 'be.addBinding'
@@ -180,7 +180,7 @@ describe('AttributeTranslator', () => {
       const attribute: Attribute = createAttribute('isOpen', '{this.viewModel.isShown}');
       const info: IAttributeInfo = createUnit().translate(attribute, objectName, { updateMethod: 'setIsOpen' });
 
-      const expectedValue: string = `this.${memberNames.host}.viewModel.isShown`;
+      const expectedValue: string = `${memberNames.thisAttr}.viewModel.isShown`;
       const expectedPropSetter: string = `this.${objectName}!.setIsOpen(${expectedValue});`;
       const expectedAddBinding: string = `this.${memberNames.addBinding}('${expectedValue}', (value) => { this.${objectName}!.setIsOpen(value); });`;
       expect(info).toEqual({
@@ -195,7 +195,7 @@ describe('AttributeTranslator', () => {
       const attribute: Attribute = createAttribute('loadFailed', '{ this._onLoadFailed }');
       const info: IAttributeInfo = createUnit().translate(attribute, objectName, { isEvent: true });
 
-      const expectedValue: string = `this.${memberNames.host}._onLoadFailed`;
+      const expectedValue: string = `${memberNames.thisAttr}._onLoadFailed`;
       const expectedPropSetter: string = `this.${objectName}!.loadFailed.subscribe(${expectedValue});`;
       expect(info).toEqual({
         name: 'loadFailed',
@@ -209,7 +209,7 @@ describe('AttributeTranslator', () => {
       const attribute: Attribute = createAttribute('onImageLoaded', '{ () => this._display() }');
       const info: IAttributeInfo = createUnit().translate(attribute, objectName, { isObservable: true });
 
-      const expectedValue: string = `() => this.${memberNames.host}._display()`;
+      const expectedValue: string = `() => ${memberNames.thisAttr}._display()`;
       const expectedPropSetter: string = `this.${objectName}!.onImageLoadedObservable.add(${expectedValue});`;
       expect(info).toEqual({
         name: 'onImageLoaded',
@@ -237,7 +237,7 @@ describe('AttributeTranslator', () => {
     const attribute: Attribute = createAttribute('alpha', '{ this.viewModel.opacity }');
     const info: IAttributeInfo = createUnit().translate(attribute, objectName, { doNotBind: true });
 
-    const expectedValue: string = `this.${memberNames.host}.viewModel.opacity`;
+    const expectedValue: string = `${memberNames.thisAttr}.viewModel.opacity`;
     const expectedPropSetter: string = `this.${objectName}!.alpha = ${expectedValue};`;
     expect(info).toEqual({
       name: 'alpha',
@@ -251,7 +251,7 @@ describe('AttributeTranslator', () => {
     it('extracts the value of expressions', () => {
       const attribute: Attribute = createAttribute('url', '{this.viewModel.imageUrl   }');
       const expression: string = createUnit().extractExpression(attribute);
-      expect(expression).toBe(`this.${memberNames.host}.viewModel.imageUrl`);
+      expect(expression).toBe(`${memberNames.thisAttr}.viewModel.imageUrl`);
     });
 
     it('surrounds the value in quotes if not an expression and useQuotesIfNeeded is true', () => {
@@ -270,7 +270,7 @@ describe('AttributeTranslator', () => {
   describe('extractExpressionFromValueAndType', () => {
     it('extracts the value of expressions', () => {
       const expression: string = createUnit().extractExpressionFromTypeAndValue('number', '{ this.visibility }');
-      expect(expression).toBe(`this.${memberNames.host}.visibility`);
+      expect(expression).toBe(`${memberNames.thisAttr}.visibility`);
     });
 
     it('can parse a primitive object if the type matches', () => {

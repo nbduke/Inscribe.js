@@ -101,7 +101,7 @@ export default class AttributeTranslator {
   }
 
   private _cleanExpression(expression: string): string {
-    return expression.trim().replace(/this\./g, `this.${this._memberNames.host}.`);
+    return expression.trim().replace(/this\./g, this._memberNames.thisAttr + '.');
   }
 
   private _handleExpression(

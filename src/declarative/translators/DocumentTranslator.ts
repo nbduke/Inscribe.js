@@ -10,9 +10,9 @@ import GuiTranslator from './GuiTranslator';
 
 export interface IMemberNames {
   root: string;
-  host: string;
   init: string;
   scene: string;
+  thisAttr: string;
   propertyChanged: string;
   bindingEngine: string;
   addBinding: string;
@@ -42,9 +42,9 @@ export interface IImportLibs {
 export default class DocumentTranslator {
   private readonly _memberNames: IMemberNames = {
     root: '_root',
-    host: '_host',
     init: '__init',
     scene: '_scene',
+    thisAttr: 'this',
     propertyChanged: 'propertyChanged',
     bindingEngine: '_bindingEngine',
     addBinding: '_bindingEngine.addBinding'
@@ -89,18 +89,11 @@ export default class DocumentTranslator {
   private _setupVariablesAndMethods(isMixin: boolean) {
     this._class.addMemberVariable(this._memberNames.root, 'Node | null', 'private', 'null');
     this._class.addMemberVariable(this._memberNames.scene, 'Scene', 'private', undefined, '!');
-    this._class.addMemberVariable(this._memberNames.host, 'any', 'private', undefined, '!');
     this._class.addMemberVariable(this._memberNames.bindingEngine, 'BindingEngine', 'private', undefined, '!');
     this._class.addMemberVariable('_isInitialized', 'boolean', 'private', 'false');
 
     const rootArgument: IMethodArgument = { name: 'root', type: 'Node | Scene' };
-    const initMethod: MethodBuilder = new MethodBuilder(
-      this._memberNames.init,
-      'void',
-      'protected',
-      rootArgument,
-      { name: 'scriptProvider', type: 'any' }
-    );
+    const initMethod: MethodBuilder = new MethodBuilder(this._memberNames.init, 'void', 'protected', rootArgument);
     initMethod.addToBody(
       'if (this._isInitialized) return;',
       'this._isInitialized = true;',
@@ -111,18 +104,37 @@ export default class DocumentTranslator {
       `  this.${this._memberNames.root} = root;`,
       `  this.${this._memberNames.scene} = root.getScene();`,
       `}`,
-      `this.${this._memberNames.host} = scriptProvider;`,
-      `this.${this._memberNames.bindingEngine} = new BindingEngine(this);`,
-      `if (!scriptProvider.${this._memberNames.propertyChanged}) {`,
-      `  scriptProvider.${this._memberNames.propertyChanged} = new Event();`,
-      `}`
+      `this.${this._memberNames.bindingEngine} = new BindingEngine(this);`
     );
-    this._class.addMethod(initMethod);
 
-    if (!isMixin) {
+    if (isMixin) {
+      const mixin: string = 'mixin';
+      this._memberNames.thisAttr += '._' + mixin;
+      this._class.addMemberVariable('_' + mixin, 'any', 'private', undefined, '!');
+      initMethod.args.push({ name: mixin, type: 'any' });
+      initMethod.addToBody(
+        `${this._memberNames.thisAttr} = ${mixin};`,
+        `if (!${mixin}.${this._memberNames.propertyChanged}) {`,
+        `  ${mixin}.${this._memberNames.propertyChanged} = new Event();`,
+        `}`
+      );
+    } else {
+      this._implicitImports.inscribe.add('IPropertyChangedArgs');
       this._class.setConstructorArgs(rootArgument);
-      this._class.addToConstructorBody(`this.__init(root, this);`);
+      this._class.addToConstructorBody(`this.${this._memberNames.init}(root);`);
+      this._class.addMemberVariable(
+        this._memberNames.propertyChanged,
+        'Event<IPropertyChangedArgs>',
+        'public',
+        undefined,
+        '!'
+      );
+      initMethod.addToBody(
+        `this.${this._memberNames.propertyChanged} = new Event();`
+      );
     }
+
+    this._class.addMethod(initMethod);
   }
 
   private _getSharedMaterialsAndTextures(root: Element): void {

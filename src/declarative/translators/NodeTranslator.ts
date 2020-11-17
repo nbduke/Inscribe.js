@@ -253,7 +253,7 @@ export default class NodeTranslator {
     if (initWhen) {
       const bindingKey: string = this._attributeTranslator.extractExpression(initWhen);
       this._class.getMethod(this._memberNames.init)!.addToBody(
-        `this.${this._memberNames.addBinding}(${bindingKey}, (value) => { if (value) this.${methodName}(); });`
+        `this.${this._memberNames.addBinding}('${bindingKey}', (value) => { if (value) this.${methodName}(); });`
       );
     }
 

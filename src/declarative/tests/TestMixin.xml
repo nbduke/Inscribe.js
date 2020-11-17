@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<View
+  name="Mixin"
+  isMixin="true"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation="../../../View.xsd"
+>
+  <Properties>
+    <Property name="modelUrl" type="string" />
+    <Property name="showPodium" type="boolean" default="true" />
+  </Properties>
+  <Nodes>
+    <ModelLoader
+      url="{this.modelUrl}"
+      enabled="{this._canShowModel}"
+      shouldNormalize="true"
+      loaded="{this._onModelLoaded}"
+    />
+    <DeferredGroup name="podiumGroup" initWhen="{this.showPodium}">
+      <Box
+        name="_podium"
+        size="1"
+        scaling="{this._podiumScaling}"
+        position.y="-0.5"
+        isPickable="false"
+        enabled="{this.showPodium}"
+      >
+        <Material>
+          <StandardMaterial
+            name="_podiumMat"
+            emissiveColor="{this._podiumColor}"
+            diffuseColor="{this._podiumColor}"
+          />
+        </Material>
+      </Box>
+    </DeferredGroup>
+  </Nodes>
+</View>
